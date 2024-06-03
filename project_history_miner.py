@@ -14,37 +14,44 @@ projects = [
     {
         'name': 'HdrHistogram',
         'branch': 'master',
-        'path': os.path.join(BASE_PROJECT_PATH, 'HdrHistogram')
+        'path': os.path.join(BASE_PROJECT_PATH, 'HdrHistogram'),
+        'benchmark_directory': 'HdrHistogram-benchmarks'
     },
     {
         'name': 'JCTools',
         'branch': 'master',
-        'path': os.path.join(BASE_PROJECT_PATH, 'JCTools')
+        'path': os.path.join(BASE_PROJECT_PATH, 'JCTools'),
+        'benchmark_directory': 'jctools-benchmarks'
     },
     {
         'name': 'debezium',
         'branch': 'main',
-        'path': os.path.join(BASE_PROJECT_PATH, 'debezium')
+        'path': os.path.join(BASE_PROJECT_PATH, 'debezium'),
+        'benchmark_directory': 'debezium-microbenchmark'
     },
     {
         'name': 'SimpleFlatMapper',
         'branch': 'master',
-        'path': os.path.join(BASE_PROJECT_PATH, 'SimpleFlatMapper')
+        'path': os.path.join(BASE_PROJECT_PATH, 'SimpleFlatMapper'),
+        'benchmark_directory': 'sfm-jmh'
     },
     {
         'name': 'apm-agent-java',
         'branch': 'master',
-        'path': os.path.join(BASE_PROJECT_PATH, 'apm-agent-java')
+        'path': os.path.join(BASE_PROJECT_PATH, 'apm-agent-java'),
+        'benchmark_directory': 'apm-agent-java-benchmarks'
     },
     {
         'name': 'jetty',
         'branch': 'jetty-12.0.x',
-        'path': os.path.join(BASE_PROJECT_PATH, 'jetty')
+        'path': os.path.join(BASE_PROJECT_PATH, 'jetty'),
+        'benchmark_directory': 'tests/jetty-jmh'
     },
     {
         'name': 'netty',
         'branch': '4.1',
-        'path': os.path.join(BASE_PROJECT_PATH, 'netty')
+        'path': os.path.join(BASE_PROJECT_PATH, 'netty'),
+        'benchmark_directory': 'microbench'
     },
     {
         'name': 'rdf4j',
