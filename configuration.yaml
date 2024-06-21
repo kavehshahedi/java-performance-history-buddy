@@ -1,0 +1,12 @@
+logging:
+  level: fine
+  file: logs/instrumentation.log
+instrumentation:
+  target_package: com.example
+  target_methods:
+    instrument:
+    - myFunction
+    - myOtherFunction
+    ignore:
+    - myFunctionToIgnore
+    - myOtherFunctionToIgnore
