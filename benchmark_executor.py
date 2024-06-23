@@ -10,6 +10,8 @@ import xml.etree.ElementTree as ET
 
 from yaml_helper import YamlCreator
 
+from mhm.utils.file_utils import FileUtils
+
 
 class BenchmarkExecutor:
 
@@ -73,6 +75,11 @@ class BenchmarkExecutor:
             benchmark_jar_path, list_of_benchmarks = self.__get_list_of_benchmarks(self.project_path, project_benchmark_directory)
             if not list_of_benchmarks:
                 print(f'{commit.hexsha} can\'t get list of benchmarks')
+                continue
+
+            has_benchmark_executed, benchmark_history = self.__has_benchmark_previously_executed(commit, project_benchmark_directory)
+            if has_benchmark_executed:
+                print(f'{commit.hexsha} has benchmark previously executed')
                 continue
 
             target_methods = []
@@ -149,6 +156,31 @@ class BenchmarkExecutor:
             return '', []
 
         return benchmark_jar_path, [line.strip() for line in process.stdout.decode('utf-8').strip().splitlines()[1:]]
+    
+    def __has_benchmark_previously_executed(self, commit: Commit, benchmarks_directory: str) -> Tuple[bool, object]:
+        """
+        Steps:
+            1. Get the benchmark directory
+            2. Calculate the hash of the directory
+            3. Check whether the hash exists in the previous results
+            4. If it exists, return True; otherwise, return False
+        """
+        
+        benchmark_directory = os.path.join(self.project_path, benchmarks_directory)
+        benchmark_hash = FileUtils.get_folder_hash(benchmark_directory)
+        
+        history_path = os.path.join('results', self.project_name, 'benchmark_history.json')
+        if not os.path.exists(history_path):
+            return False, None
+        
+        with open(history_path, 'r') as f:
+            history = json.load(f)
+
+        if benchmark_hash in history:
+            return True, history[benchmark_hash]
+        
+        return False, []
+
 
     def __get_target_methods(self, project_path: str, project_package: str, commit_id: str, benchmark_jar_path: str, benchmark_name: str) -> Union[NoneType, list[str]]:
         log_path = os.path.join('results', self.project_name,
