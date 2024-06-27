@@ -1,16 +1,19 @@
 from types import NoneType
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 from git import Commit, Repo
 import os
 import subprocess
-import time
 import re
+import requests
 import json
 import xml.etree.ElementTree as ET
 
 from yaml_helper import YamlCreator
 
 from mhm.utils.file_utils import FileUtils
+from performance_analysis import PerformanceAnalysis
+
+GIT_TOKEN = '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'
 
 
 class BenchmarkExecutor:
@@ -21,13 +24,15 @@ class BenchmarkExecutor:
 
         self.repo = Repo(self.project_path)
 
-    def execute(self, project_benchmark_directory: str, commits: list[str], required_dependencies: list[dict] = []) -> None:
+    def execute(self, jmh_dependency: dict, current_commit_hash: str, previous_commit_hash: str,
+                changed_methods: list[str], target_package: str, git_info: dict,
+                required_dependencies: list[dict] = []) -> Tuple[bool, Optional[dict]]:
         """
         Execute the benchmarks for the given project
         Steps:
             1. Checkout the commit
             2. Modify the pom.xml file to check Java compiling version (update to 17 if it is 6 or less)
-            3. Add required dependencies to the project's pom.xml file
+            3. Add required dependencies to the project's pom.xml file (optional)
             4. Check whether the project is buildable (i.e., build the project)
             5. Build the benchmarks
             6. Get the list of benchmarks
@@ -42,69 +47,173 @@ class BenchmarkExecutor:
             required_dependencies (list[dict], optional): The list of required dependencies to be added to the project's pom.xml file. Defaults to [].
         """
 
-        for commit in commits:
+        # Variables
+        project_benchmark_directory = jmh_dependency['benchmark_directory']
+        project_benchmark_name = jmh_dependency['benchmark_name']
+        previous_benchmark_hash = ""
 
-            start_time = time.time()
+        for commit_hash in [previous_commit_hash, current_commit_hash]:
+            print(f"Checking out to {'current' if commit_hash == current_commit_hash else 'previous'} commit...")
 
             # Checkout the commit
-            self.repo.git.checkout(commit, force=True)
-            commit = self.repo.commit(commit)
+            self.repo.git.checkout(commit_hash, force=True)
+            commit = self.repo.commit(commit_hash)
+
+            print("Checking if benchmark has previously executed...")
+            has_benchmark_executed, benchmark_history, benchmark_hash = self.__has_benchmark_previously_executed(commit, project_benchmark_directory)
+            print('\tYes' if has_benchmark_executed else '\tNo', benchmark_hash)
+
+            if previous_benchmark_hash != "" and previous_benchmark_hash != benchmark_hash:
+                print(f'New and old commits have different benchmarks')
+                return False, None
 
             # Modify the pom.xml file to check Java compiling version
-            ucv = self.__update_compile_version(self.project_path, commit, 11)
+            print("Updating compile version...")
+            ucv = self.__update_compile_version(self.project_path, commit, "1.8")
             if not ucv:
                 print(f'{commit.hexsha} can\'t update compile version')
-                continue
+                return False, None
 
+            print("Adding required dependencies...")
             ard = self.__add_required_dependencies(self.project_path, required_dependencies)
             if not ard:
                 print(f'{commit.hexsha} can\'t add required dependencies')
-                continue
+                return False, None
 
             # Check whether the project is buildable
-            is_buildable = self.__is_project_buildable(self.project_path)
+            print("Checking if project is buildable...")
+            is_buildable = self.__is_project_buildable(project_path=self.project_path, owner=git_info['owner'], repo_name=git_info['repo'], commit_sha=commit.hexsha)
             if not is_buildable:
                 print(f'{commit.hexsha} is not buildable')
-                continue
+                return False, None
 
+            print("Building benchmarks...")
             benchmark = self.__build_benchmarks(self.project_path, project_benchmark_directory)
             if not benchmark:
-                print(f'{commit.hexsha} can\'t build benchmarks')
-                continue
+                print(f'Can\'t build benchmarks')
+                return False, None
 
-            benchmark_jar_path, list_of_benchmarks = self.__get_list_of_benchmarks(self.project_path, project_benchmark_directory)
-            if not list_of_benchmarks:
-                print(f'{commit.hexsha} can\'t get list of benchmarks')
-                continue
+            previous_benchmark_hash = benchmark_hash
 
-            has_benchmark_executed, benchmark_history = self.__has_benchmark_previously_executed(commit, project_benchmark_directory)
-            if has_benchmark_executed:
-                print(f'{commit.hexsha} has benchmark previously executed')
-                continue
+        print("Getting list of benchmarks...")
+        benchmark_jar_path, list_of_benchmarks = self.__get_list_of_benchmarks(self.project_path, project_benchmark_directory, project_benchmark_name)
+        if not list_of_benchmarks:
+            print(f'Can\'t get list of benchmarks')
+            return False, None
 
-            target_methods = []
+        print("Getting target methods...")
+        target_methods = []
+        if not has_benchmark_executed:
             for benchmark in list_of_benchmarks:
-                tm = self.__get_target_methods(self.project_path, 'org.HdrHistogram', commit.hexsha, benchmark_jar_path, benchmark)
+                tm = self.__get_target_methods(self.project_path, target_package, commit.hexsha, benchmark_jar_path, benchmark)
                 if not tm:
-                    print(f'{commit.hexsha} can\'t get target methods')
+                    print(f'Can\'t get target methods')
                     continue
 
-                target_methods.extend(tm)
+                target_methods.append({
+                    'benchmark': benchmark,
+                    'methods': tm
+                })
 
-            is_targeting, targets = self.__is_benchmark_targeting_changed_methods(self.project_name, commit.hexsha, target_methods)
+            self.__save_benchmark_history(self.project_name, target_methods, benchmark_hash)
+        else:
+            target_methods = benchmark_history
+
+        print("Checking if benchmark is targeting changed methods...")
+
+        chosen_benchmarks = {}
+        for tm in target_methods:
+            tm_benchmark = tm['benchmark']
+            tm_methods = tm['methods']
+
+            is_targeting, targets = self.__is_benchmark_targeting_changed_methods(changed_methods, tm_methods)
             if is_targeting:
-                print(f'{commit.hexsha} is targeting changed methods with {len(targets)} methods')
-                YamlCreator().create_yaml(
-                    log_file=f'{self.project_name}_{commit.hexsha}.log',
-                    target_package='org.HdrHistogram',
-                    instrument=targets,
-                    ignore=[],
-                    yaml_file=f'{self.project_name}_{commit.hexsha}_config.yaml'
-                )
+                chosen_benchmarks[tm_benchmark] = targets
 
-            print(f'{commit.hexsha} took {time.time() - start_time} seconds')
+        if not chosen_benchmarks:
+            print(f'{commit.hexsha} didn\'t execute any benchmarks')
+            return False, None
 
-    def __is_project_buildable(self, project_path: str) -> bool:
+        # Empty the execution directory first
+        config_directory = os.path.join('results', self.project_name, commit.hexsha, 'execution')
+        os.makedirs(config_directory, exist_ok=True)
+        for file in os.listdir(config_directory):
+            os.remove(os.path.join(config_directory, file))
+
+        chosen_benchmarks = self.__minimize_and_distribute_methods(chosen_benchmarks)
+        for benchmark, methods in chosen_benchmarks.items():
+            print(f'Benchmark {benchmark} is targeting {len(methods)} methods')
+            YamlCreator().create_yaml(
+                log_file=os.path.join(config_directory, f'{benchmark}_log.log'),
+                target_package=target_package,
+                instrument=methods,
+                ignore=[],
+                yaml_file=os.path.join(config_directory, f'{benchmark}_config.yaml')
+            )
+
+        performance_results = {}
+        for commit_hash in [current_commit_hash, previous_commit_hash]:
+            print(f"Checking out to {'current' if commit_hash == current_commit_hash else 'previous'} commit...")
+            # Checkout the commit. If already checked out, no need to checkout again
+            if self.repo.head.commit.hexsha != commit_hash:
+                self.repo.git.checkout(commit_hash, force=True)
+
+                # Rebuid the commit object
+                self.__update_compile_version(self.project_path, self.repo.commit(commit_hash), "1.8")
+                self.__add_required_dependencies(self.project_path, required_dependencies)
+                self.__is_project_buildable(project_path=self.project_path, owner=git_info['owner'], repo_name=git_info['repo'], commit_sha=commit_hash)
+                self.__build_benchmarks(self.project_path, project_benchmark_directory)
+
+            commit = self.repo.commit(commit_hash)
+
+            print("Running benchmarks...")
+            performance_data = self.__run_benchmark_and_get_performance_data(self.project_path, benchmark_jar_path, config_directory)
+            if not performance_data:
+                print(f'Error while running benchmarks for getting performance data')
+                return False, None
+
+            performance_results[commit_hash] = performance_data
+
+        return True, performance_results
+
+    def __is_project_buildable(self, project_path: str, owner, repo_name, commit_sha) -> bool:
+        # Check if in the history, the build is successful
+        if not os.path.exists(os.path.join('results', self.project_name, 'build_history.json')):
+            with open(os.path.join('results', self.project_name, 'build_history.json'), 'w') as f:
+                json.dump({}, f)
+
+        with open(os.path.join('results', self.project_name, 'build_history.json'), 'r') as f:
+            build_history = json.load(f)
+
+        if commit_sha in build_history and build_history[commit_sha] == False:
+            return False
+
+        def is_github_builable() -> bool:
+            headers = {"Authorization": f"token {GIT_TOKEN}"}
+            commit_url = f"https://api.github.com/repos/{owner}/{repo_name}/commits/{commit_sha}"
+            status_url = f"{commit_url}/status"
+
+            # Get build statuses
+            statuses_response = requests.get(status_url, headers=headers)
+            status_data = statuses_response.json()
+
+            if 'state' in status_data:
+                if status_data['state'] == "failure" or status_data['state'] == "error":
+                    print(f"\tGitHub build status is failure")
+                    return False
+
+                print(f"\tGitHub build status is {status_data['state']}")
+            return True
+
+        if not is_github_builable():
+            # Save the result
+            build_history[commit_sha] = False
+            with open(os.path.join('results', self.project_name, 'build_history.json'), 'w') as f:
+                json.dump(build_history, f)
+
+            return False
+
+        print(f"\tBuilding the project locally...")
         process = subprocess.run([
             'mvn',
             'clean',
@@ -113,10 +222,20 @@ class BenchmarkExecutor:
             '-Dmaven.javadoc.skip=true',
             '-Dcheckstyle.skip=true',
             '-Denforcer.skip=true'
-        ], cwd=project_path, capture_output=False, shell=True)
+        ], cwd=project_path, capture_output=True, shell=True)
 
         if process.returncode != 0:
+            # Save the result
+            build_history[commit_sha] = False
+            with open(os.path.join('results', self.project_name, 'build_history.json'), 'w') as f:
+                json.dump(build_history, f)
+
             return False
+
+        # Save the result
+        build_history[commit_sha] = True
+        with open(os.path.join('results', self.project_name, 'build_history.json'), 'w') as f:
+            json.dump(build_history, f)
 
         return True
 
@@ -125,22 +244,26 @@ class BenchmarkExecutor:
             'mvn',
             'clean',
             'package'
-        ], cwd=os.path.join(project_path, benchmark_directory), capture_output=False, shell=True)
+        ], cwd=os.path.join(project_path, benchmark_directory), capture_output=True, shell=True)
 
         if process.returncode != 0:
             return False
 
         return True
 
-    def __get_list_of_benchmarks(self, project_path: str, benchmark_directory: str) -> Tuple[str, list[str]]:
+    def __get_list_of_benchmarks(self, project_path: str, benchmark_directory: str, benchmark_name: str) -> Tuple[str, list[str]]:
         benchmark_jar_path = None
-        for root, dirs, files in os.walk(os.path.join(project_path, benchmark_directory)):
-            for file in files:
-                if file.endswith('.jar'):
-                    if 'shade' in file or 'original' in file or 'sources' in file or 'javadoc' in file or 'tests' in file or 'test' in file:
-                        continue
-                    benchmark_jar_path = os.path.join(root, file)
-                    break
+        if benchmark_name == '':
+            for root, _, files in os.walk(os.path.join(project_path, benchmark_directory)):
+                for file in files:
+                    if file.endswith('.jar'):
+                        if 'shade' in file or 'original' in file or 'sources' in file or 'javadoc' in file or 'tests' in file or 'test' in file:
+                            continue
+                        benchmark_jar_path = os.path.join(root, file)
+                        break
+
+        else:
+            benchmark_jar_path = os.path.join(project_path, benchmark_directory, 'target', f'{benchmark_name}.jar')
 
         if not benchmark_jar_path:
             return '', []
@@ -156,8 +279,8 @@ class BenchmarkExecutor:
             return '', []
 
         return benchmark_jar_path, [line.strip() for line in process.stdout.decode('utf-8').strip().splitlines()[1:]]
-    
-    def __has_benchmark_previously_executed(self, commit: Commit, benchmarks_directory: str) -> Tuple[bool, object]:
+
+    def __has_benchmark_previously_executed(self, commit: Commit, benchmarks_directory: str) -> Tuple[bool, list, str]:
         """
         Steps:
             1. Get the benchmark directory
@@ -165,22 +288,35 @@ class BenchmarkExecutor:
             3. Check whether the hash exists in the previous results
             4. If it exists, return True; otherwise, return False
         """
-        
-        benchmark_directory = os.path.join(self.project_path, benchmarks_directory)
+
+        benchmark_directory = os.path.join(self.project_path, benchmarks_directory, 'src', 'main')
         benchmark_hash = FileUtils.get_folder_hash(benchmark_directory)
-        
+
         history_path = os.path.join('results', self.project_name, 'benchmark_history.json')
         if not os.path.exists(history_path):
-            return False, None
-        
+            return False, [], benchmark_hash
+
         with open(history_path, 'r') as f:
             history = json.load(f)
 
-        if benchmark_hash in history:
-            return True, history[benchmark_hash]
-        
-        return False, []
+        if benchmark_hash in history and len(history[benchmark_hash]) > 0:
+            return True, history[benchmark_hash], benchmark_hash
 
+        return False, [], benchmark_hash
+
+    def __save_benchmark_history(self, project_name, target_methods: list[dict], benchmark_hash: str) -> None:
+        history_path = os.path.join('results', project_name, 'benchmark_history.json')
+        if not os.path.exists(history_path):
+            with open(history_path, 'w') as f:
+                json.dump({}, f)
+
+        with open(history_path, 'r') as f:
+            history = json.load(f)
+
+        history[benchmark_hash] = target_methods
+
+        with open(history_path, 'w') as f:
+            json.dump(history, f)
 
     def __get_target_methods(self, project_path: str, project_package: str, commit_id: str, benchmark_jar_path: str, benchmark_name: str) -> Union[NoneType, list[str]]:
         log_path = os.path.join('results', self.project_name,
@@ -217,27 +353,46 @@ class BenchmarkExecutor:
 
         return list(target_methods)
 
-    def __is_benchmark_targeting_changed_methods(self, project_name: str, commit_id: str, target_functions: list[str]) -> Tuple[bool, list[str]]:
-        changed_methods_path = os.path.join(
-            'results', project_name, commit_id, 'method_changes.json')
-        if not os.path.exists(changed_methods_path):
-            return False, []
-
-        with open(changed_methods_path, 'r') as f:
-            changed_methods = json.load(f)
-
+    def __is_benchmark_targeting_changed_methods(self, changed_methods: list, target_functions: list[str]) -> Tuple[bool, list[str]]:
         chosen_methods = set()
-
-        for changes in list(changed_methods.values()):
-            for method in changes['methods']:
-                # method = method.split('(')[0].strip()
-
-                if method.split('(')[0].strip() in target_functions:
-                    chosen_methods.add(method)
+        tf = [f.split('(')[0].strip() for f in target_functions]
+        for method in changed_methods:
+            if method.split('(')[0].strip() in tf:
+                chosen_methods.add(method)
 
         return len(chosen_methods) > 0, list(chosen_methods)
 
-    def __update_compile_version(self, project_path: str, commit: Commit, version: int) -> bool:
+    def __minimize_and_distribute_methods(self, benchmarks: dict[str, list[str]]) -> dict[str, list[str]]:
+        # Create a set of all methods to be covered
+        all_methods = set()
+        for methods in benchmarks.values():
+            all_methods.update(methods)
+
+        # Create a list of benchmarks sorted by the number of unique methods they cover in descending order
+        sorted_benchmarks = sorted(benchmarks.items(), key=lambda x: len(x[1]), reverse=True)
+
+        selected_benchmarks = {}
+        covered_methods = set()
+
+        # Select benchmarks iteratively
+        while covered_methods != all_methods:
+            for benchmark, methods in sorted_benchmarks:
+                # Calculate the new methods this benchmark will cover
+                new_methods = set(methods) - covered_methods
+                if new_methods:
+                    # Select this benchmark and assign it the new methods
+                    selected_benchmarks[benchmark] = new_methods
+                    covered_methods.update(new_methods)
+                    # Remove the selected benchmark from the list
+                    sorted_benchmarks = [b for b in sorted_benchmarks if b[0] != benchmark]
+                    break
+
+        # Covert set to list
+        selected_benchmarks = {k: list(v) for k, v in selected_benchmarks.items()}
+
+        return selected_benchmarks
+
+    def __update_compile_version(self, project_path: str, commit: Commit, version: str) -> bool:
         # Iterate through all files
         for root, dirs, files in os.walk(project_path):
             for file in files:
@@ -259,11 +414,15 @@ class BenchmarkExecutor:
                                 if artifact_id.text == 'maven-compiler-plugin':
                                     for configuration in plugin.findall('configuration'):
                                         for source in configuration.findall('source'):
-                                            if source.text == '1.6':
-                                                source.text = str(version)
+                                            if source.text is not None:
+                                                source_version = float(source.text)
+                                                if source_version < float(version):
+                                                    source.text = str(version)
                                         for target in configuration.findall('target'):
-                                            if target.text == '1.6':
-                                                target.text = str(version)
+                                            if target.text is not None:
+                                                target_version = float(target.text)
+                                                if target_version < float(version):
+                                                    target.text = str(version)
 
                         with open(pom_path, 'w') as f:
                             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
@@ -298,3 +457,39 @@ class BenchmarkExecutor:
                             return False
 
         return True
+
+    def __run_benchmark_and_get_performance_data(self, project_path: str, benchmark_jar_path: str, config_directory) -> Union[NoneType, dict]:
+        # Open all of the config files
+        configs = [file for file in os.listdir(config_directory) if file.endswith('.yaml')]
+
+        performance_data = {}
+        for config in configs:
+            benchmark_name = config.replace('_config.yaml', '')
+            config_path = os.path.join(config_directory, config)
+
+            # Remove the previous log file (if exists)
+            log_path = os.path.join(config_directory, f'{benchmark_name}_log.log')
+            if os.path.exists(log_path):
+                os.remove(log_path)
+
+            process = subprocess.run([
+                'java',
+                '-Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector',
+                f'-javaagent:java-instrumentation-agent-1.0.jar=config={config_path}',
+                '-jar',
+                benchmark_jar_path,
+                '-f', '1',
+                '-wi', '0',
+                '-i', '1',
+                '-r', '1',
+                benchmark_name
+            ], capture_output=True, shell=True)
+
+            if process.returncode != 0:
+                return None
+
+            # Analyze the performance
+            method_performances = PerformanceAnalysis(log_path).analyze()
+            performance_data[benchmark_name] = method_performances
+
+        return performance_data

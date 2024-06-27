@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
             # Read the content of the jmh_dependency.txt file
             with open(os.path.join(commit_path, 'jmh_dependency.txt'), 'r') as f:
-                jmh_dependency = f.read().strip()
+                jmh_dependency = json.load(f)
 
             # Read the content of the method_changes.json file
             with open(os.path.join(commit_path, 'method_changes.json'), 'r') as f:
@@ -57,7 +57,10 @@ if __name__ == '__main__':
                 'commit': commit_hash,
                 'previous_commit': previous_commit,
                 'commit_message': commit_message,
-                'jmh_dependency': jmh_dependency,
+                'jmh_dependency': {
+                    'benchmark_directory': jmh_dependency.get('benchmark_directory', ''),
+                    'benchmark_name': jmh_dependency.get('benchmark_name', '')
+                },
                 'method_changes': method_changes
             })
 

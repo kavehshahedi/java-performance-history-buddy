@@ -1,4 +1,5 @@
 from ruamel.yaml import YAML
+import os
 
 from typing import Optional, List
 
@@ -43,8 +44,8 @@ class YamlCreator:
 
     def instrumentation_representer(self, dumper, data):
         return dumper.represent_dict({
-            'target_package': data.target_package,
-            'target_methods': data.target_methods,
+            'targetPackage': data.target_package,
+            'targetMethods': data.target_methods,
         })
 
     def target_methods_representer(self, dumper, data):
@@ -63,6 +64,9 @@ class YamlCreator:
             Configuration.Instrumentation, self.instrumentation_representer)
         yaml.representer.add_representer(
             Configuration.TargetMethods, self.target_methods_representer)
+        
+        # If directory does not exist, create it
+        os.makedirs(os.path.dirname(yaml_file), exist_ok=True)
 
         # Create and populate Configuration instance
         config = Configuration(

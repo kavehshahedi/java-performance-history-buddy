@@ -4,7 +4,10 @@
             "commit": "016ab97811fcef1594eab6a02dd44d516624ee73",
             "previous_commit": "bc7aef6c231e1215d5be1b38074203694b71ebaf",
             "commit_message": "Corrected AIOOB on linear and logarithmic iterators:",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/LinearIterator.java": {
                     "methods": [
@@ -59,7 +62,10 @@
             "commit": "0194bab4610fe925580d3fc6340e751cb8370469",
             "previous_commit": "61e5d3ccb2aff1931d0f1eb1559aabace974d2dd",
             "commit_message": "Changed log version to 1.2, added V2 encoding log (jHiccup) and associated test",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramLogReaderWriterTest.java": {
                     "methods": [
@@ -125,7 +131,10 @@
             "commit": "030aac1ea20b8c09e7c522a4594388534164d643",
             "previous_commit": "9866a4cc8ec363626723154998230a358e8e06e5",
             "commit_message": "Fix possible class cast exception",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/SynchronizedDoubleHistogram.java": {
                     "methods": [
@@ -152,7 +161,10 @@
             "commit": "05015c9d37c611363f42b6d61cb0de11965f5cff",
             "previous_commit": "dda4dbf358aa2cdc81c5629875f956ce87c81723",
             "commit_message": "Fixes https://github.com/HdrHistogram/HdrHistogram/issues/178",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/DoubleHistogram.java": {
                     "methods": [
@@ -188,7 +200,10 @@
             "commit": "1383017d64fc5bac9c332ea5973d89ee31aa767d",
             "previous_commit": "463fcbddf40a9963273076cca86557b664b8ac59",
             "commit_message": "Adds some reset tests to check min/max resetting",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/DoubleHistogramTest.java": {
                     "methods": [
@@ -226,7 +241,10 @@
             "commit": "13fb2d8f5dab11da35946b4faae753949d2fe43c",
             "previous_commit": "1e52932a65ed615665589fd244debb2f95b8ed08",
             "commit_message": "Cosmetic and javadoc refactoring",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/WriterReaderPhaser.java": {
                     "methods": [
@@ -242,7 +260,10 @@
             "commit": "14d58c3d3e8c08892ee8654117857f04baa8f19a",
             "previous_commit": "58866b933b9d3632a626292ea2a0f16308649436",
             "commit_message": "Comment touchups",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -299,7 +320,10 @@
             "commit": "1573093e11ef85902562e5fab73bacba7ce8e943",
             "previous_commit": "98cacd53338656807d8183ae8bb49e88f66585b0",
             "commit_message": "Add decoders to ConcurrentDoubleHistogram",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/ConcurrentDoubleHistogram.java": {
                     "methods": [
@@ -372,7 +396,10 @@
             "commit": "167386b8e63fd7098cd57f9a257e13bceb30a543",
             "previous_commit": "f4b5004799da6a8203554cea610f1b294caee37a",
             "commit_message": "Fix race condition in AbstractHistogram.updatedMaxValue",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -393,7 +420,10 @@
             "commit": "18b6ae4cfa31634db050f2fd29bbcba5e1f8fb3f",
             "previous_commit": "32c24af481c84b0e2615f16723a701443fdcf8c5",
             "commit_message": "Allow decoded histograms to reject auto-resize",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -413,7 +443,10 @@
             "commit": "1999200d276be6b706741d88970baab6073b085a",
             "previous_commit": "0194bab4610fe925580d3fc6340e751cb8370469",
             "commit_message": "Fix incorrect file name for v2 log.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramLogReaderWriterTest.java": {
                     "methods": [
@@ -432,7 +465,10 @@
             "commit": "1beb18b80ff5b84b87817ca0a2a4d1884254c969",
             "previous_commit": "b2c0e9899f22191a3eb50d3c02acd42de365e444",
             "commit_message": "Refactored/Rationalized resize logic, made it fail all-or-nothing on OOM.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/ConcurrentHistogram.java": {
                     "methods": [
@@ -491,7 +527,10 @@
             "commit": "1efbe23b6ebc1efe491a354dca87c7d09ecf77d2",
             "previous_commit": "fca1366c47371dc5e69124b6180e4aea9d7fcdb7",
             "commit_message": "Cleans up fp computation details in getValueAtPercentile",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -514,7 +553,10 @@
             "commit": "1f0d1dc9d4055c1b1118fa59c7905072b0ff0e0f",
             "previous_commit": "d398bdf8d5d88db121a6ab518831941feb7387e1",
             "commit_message": "Sanity check autoResize after serialization",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramTest.java": {
                     "methods": [
@@ -532,7 +574,10 @@
             "commit": "1f39a46dfb0c49bb0e48c847adf856d68001d3de",
             "previous_commit": "45a56bb87960c5a8c46f0ab9222ac48c3c9850bb",
             "commit_message": "Don't try to resize in subtract() when handling a large subtrahend.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -611,7 +656,10 @@
             "commit": "2410f249276a271dc8fe555806d3204b2e2ea370",
             "previous_commit": "e3088c0c4b9141ff2cdcf0168af453ef761aa661",
             "commit_message": "Cosmetic cleanup",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -628,7 +676,10 @@
             "commit": "2413b056441604ee2a41dbb546fd91f9ee50d9be",
             "previous_commit": "e50177a328565963fd7019994cd70987b896f2ee",
             "commit_message": "Update comments to reflect LEB128-64b9B as a variant, rather than reading as regular LEB128.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -644,7 +695,10 @@
             "commit": "296902df060cbdc1d689f63f8dec3e5fe4bf7ee0",
             "previous_commit": "474ebc70a4f02789c1de2ef83642494f1fb82cfd",
             "commit_message": "Adds Base64Helper class to support Base64 across Java 6...9+",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/Base64Helper.java": {
                     "methods": [
@@ -670,7 +724,10 @@
             "commit": "2c11bfb43d91749a731a69c1d3223a27c682c577",
             "previous_commit": "df72c88c91a54f3d1d3af2e39499e6102e8e16d5",
             "commit_message": "Added tests for recycling modes",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/RecorderTest.java": {
                     "methods": [
@@ -776,7 +833,10 @@
             "commit": "2e9a4051ac7163c7a4f1f48540cc980d46e0fdd0",
             "previous_commit": "3421897b51087d1e1b14fc561d2ca62da8dff468",
             "commit_message": "Cleanup for release. Removes ZLE control API. Code always encodes with V2 encoding, but can decode V1 and V0.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -834,7 +894,10 @@
             "commit": "32c24af481c84b0e2615f16723a701443fdcf8c5",
             "previous_commit": "bb8ecbb4c4da80b5c8f54b4414f2fa86f7953574",
             "commit_message": "Fix ConcurrentDoubleHistogram decoding",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/ConcurrentHistogram.java": {
                     "methods": [
@@ -853,7 +916,10 @@
             "commit": "32e62f68d9e277850807f2b538bcab5971f11a55",
             "previous_commit": "c24ac346a6e66dfcec1e81a9d16e568648bc65c0",
             "commit_message": "Places V2maxWordSizeInBytes in constant field (instead of literal 9). Some cleanup.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -897,7 +963,10 @@
             "commit": "35c36e2673c2150c7c2b213b9123df38f5437f21",
             "previous_commit": "10992b893cf8103de138941817c8d19fb0daa39c",
             "commit_message": "FIX of message exception thrown in validateFitAsReplacementHistogram",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/SingleWriterRecorder.java": {
                     "methods": [
@@ -913,7 +982,10 @@
             "commit": "3b3b60306edf1296fe1ce0349e94478f1c5bd7c2",
             "previous_commit": "48c541626dba47f6767dc56323e9c57af917f739",
             "commit_message": "Comments explaining the constraints on right shifting",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -944,7 +1016,10 @@
             "commit": "3e30f0891536f7cbda44b1be3146158f72317800",
             "previous_commit": "14d58c3d3e8c08892ee8654117857f04baa8f19a",
             "commit_message": "Adds optional \"Tag=tag\" text field to Histogram log files",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -1107,7 +1182,10 @@
             "commit": "426451ba6f3f3bc8331db187de0da3b133e39274",
             "previous_commit": "b8c45a6ee98003f5b5b97e6579d2ee4ad72ff761",
             "commit_message": "cosmetics",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/packedarray/AbstractPackedArrayContext.java": {
                     "methods": [
@@ -1153,7 +1231,10 @@
             "commit": "42e251a452220f62e287712fd60445549811d6a9",
             "previous_commit": "3b13614ba54143c66d43265398f2e2b0cd66d60f",
             "commit_message": "Refactor new correctLogWithKnownCoordinatedOmission option",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -1186,7 +1267,10 @@
             "commit": "4399d30dd73d7a38e37890812a7c63f2fa0588f2",
             "previous_commit": "ed88d66017a32f1ed1b1634e13dbac67618316fb",
             "commit_message": "Adds hasNext() method and makes reader advance to next line when encountering format errors (but still returns null).",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogReader.java": {
                     "methods": [
@@ -1205,7 +1289,10 @@
             "commit": "45a56bb87960c5a8c46f0ab9222ac48c3c9850bb",
             "previous_commit": "c458630d7060f04668da2b5cf1c5603b37d7bfea",
             "commit_message": "Adds checks to cover both halfs of bottom bucket.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramTest.java": {
                     "methods": [
@@ -1226,7 +1313,10 @@
             "commit": "4674d9e50bc3067e6bc2e9725518e19a480aafe1",
             "previous_commit": "fd0d383b74983bcb8095e70ac9691ca1a2ddf344",
             "commit_message": "cleanup",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -1242,7 +1332,10 @@
             "commit": "4708c3a25fc335e7076f4118ab8fbb43f183debe",
             "previous_commit": "2413b056441604ee2a41dbb546fd91f9ee50d9be",
             "commit_message": "Fixed missing spaces in multi-line messages (and a missing parenthesis as well).",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -1288,7 +1381,10 @@
             "commit": "47e26f9cda921ee493254b77ea0ce185a99e0018",
             "previous_commit": "e692d03654c59dfa9c5b307ad380933b8d0f36bb",
             "commit_message": "Consistency",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/IntCountsHistogram.java": {
                     "methods": [
@@ -1316,7 +1412,10 @@
             "commit": "48c541626dba47f6767dc56323e9c57af917f739",
             "previous_commit": "f4b5004799da6a8203554cea610f1b294caee37a",
             "commit_message": "Add some comments on how data is encoded in AbstractHistogram",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -1361,7 +1460,10 @@
             "commit": "49edbc5708832c8c574a363efff79b5b5d977038",
             "previous_commit": "86cf659fb91344c0fd180c9d1bb15e8222d55780",
             "commit_message": "Simplify a few calculations in init, and use subBucketHalfCount instead of subBucketCount/2.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -1381,7 +1483,10 @@
             "commit": "4e1de59b919e7cb743e6805a4f89e7aedba73847",
             "previous_commit": "ad5a4419aa6cbbcd87f5c1ff733c017010b55e3d",
             "commit_message": "Add PackedArrayRecorder and associated tests.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/packedarray/PackedArrayRecorder.java": {
                     "methods": [
@@ -1568,7 +1673,10 @@
             "commit": "52ef7ff855fffccd5b090eb954b9ffca17178a92",
             "previous_commit": "532194f05c76fe576b82e6fbf2a7718888cb23f7",
             "commit_message": "Fix javadoc warning",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/SynchronizedHistogram.java": {
                     "methods": [
@@ -1584,7 +1692,10 @@
             "commit": "532194f05c76fe576b82e6fbf2a7718888cb23f7",
             "previous_commit": "0b51b0532c33bc4f3cca8e3cc6bb0a0bf3b65b68",
             "commit_message": "Comment touchups",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -1601,7 +1712,10 @@
             "commit": "591b05472690e81fc091b2fc0bc82235a796ed35",
             "previous_commit": "5e931a181682ed8b275ad44fdc1dcef5519188e4",
             "commit_message": "Adds HistogramLogWriter.close()",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogWriter.java": {
                     "methods": [
@@ -1617,7 +1731,10 @@
             "commit": "59e0bc14e27dca7e52fa7069dce3ec4619a49872",
             "previous_commit": "1f0d1dc9d4055c1b1118fa59c7905072b0ff0e0f",
             "commit_message": "Remove double boxing",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -1635,7 +1752,10 @@
             "commit": "5b6c642badd85b962cd7be09081e4738a9cf2c48",
             "previous_commit": "6c19efc72a90ba8ec6d8242b82d9e645794c6886",
             "commit_message": "Cleans up iterator and adds additional concurrent modification detection at next()",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogramIterator.java": {
                     "methods": [
@@ -1667,7 +1787,10 @@
             "commit": "5c7226c4ffc0e603390e4c70de3f1df35ce61a66",
             "previous_commit": "457d9fe5e1c7d9b286bf4883602aee9994c964ec",
             "commit_message": "Changes getValueAtPercentile() behavior:",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -1692,7 +1815,10 @@
             "commit": "5c9bf39b6d94b9a6579ba3317f898bd17c01e6c4",
             "previous_commit": "7dc269c31ee70a50c25cbf316b6e89dc20d9ada9",
             "commit_message": "Use the same exception type for both error cases in subtract()",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -1716,7 +1842,10 @@
             "commit": "5e931a181682ed8b275ad44fdc1dcef5519188e4",
             "previous_commit": "1f0d1dc9d4055c1b1118fa59c7905072b0ff0e0f",
             "commit_message": "Adds optional moving window percentile reporting (to separate file)",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -1803,7 +1932,10 @@
             "commit": "61e5d3ccb2aff1931d0f1eb1559aabace974d2dd",
             "previous_commit": "6c85d5e2f4b789f9a86823d00c02845d17c60e3a",
             "commit_message": "Adjusts V2 encoding to use ZigZag+LEB128 (no other word sizes or non-TZLE), disabling TZLE causes V1 encoding (for now)",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -1890,7 +2022,10 @@
             "commit": "69064c4cc9837ef8178452eb56aef7184a550c84",
             "previous_commit": "1383017d64fc5bac9c332ea5973d89ee31aa767d",
             "commit_message": "Fix reset()",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/DoubleHistogram.java": {
                     "methods": [
@@ -1908,7 +2043,10 @@
             "commit": "6a5f250daf3322fef8cfaed02935f2a5d6f01f44",
             "previous_commit": "37e52d717eb7985b743ca5113c1b5b10f91583dd",
             "commit_message": "Add several more comments.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/PercentileIterator.java": {
                     "methods": [
@@ -1938,7 +2076,10 @@
             "commit": "6b685ccb865c43b3031c37c014f57cd0b7eed63b",
             "previous_commit": "3e30f0891536f7cbda44b1be3146158f72317800",
             "commit_message": "Reset times and tag. Fix #97",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -1956,7 +2097,10 @@
             "commit": "70f89f80699877bf1953baa19c2482d56c63ca03",
             "previous_commit": "8e463bf8407ce63fdcdc08ec17c4893ce36c46dd",
             "commit_message": "Simplifies updateMaxValue",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -1974,7 +2118,10 @@
             "commit": "72645ccd837a5650ba056b05361b1ebf5ef8c8ab",
             "previous_commit": "10992b893cf8103de138941817c8d19fb0daa39c",
             "commit_message": "Linear iterator was stopping one iteration shy of the full complement of",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/LinearIterator.java": {
                     "methods": [
@@ -2093,7 +2240,10 @@
             "commit": "72b2636dbd4df8499f6ad921e136fc4f426f8c20",
             "previous_commit": "9464c8fcaf977c5bcfcb5f3d4b6c7cb492aaf049",
             "commit_message": "Eagerly end() Inflaters to avoid a native leak",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -2111,7 +2261,10 @@
             "commit": "753fe5c16ddb089b42a6ff920c06e50ead032945",
             "previous_commit": "47e26f9cda921ee493254b77ea0ce185a99e0018",
             "commit_message": "Fix concurrency race in value recording, where a value that had passed the range check can become invalid through concurrent adjustment.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/DoubleHistogram.java": {
                     "methods": [
@@ -2173,7 +2326,10 @@
             "commit": "795e99337fbedc794220f0f3b32c55ee3899beb0",
             "previous_commit": "463fcbddf40a9963273076cca86557b664b8ac59",
             "commit_message": "Refactor HistogramLogReader and AbstractLogReader for de-duplication",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogReader.java": {
                     "methods": [
@@ -2361,7 +2517,10 @@
             "commit": "7a74ea610eeb9c98b3c0f0a93ec4e45f2f524187",
             "previous_commit": "1f0d1dc9d4055c1b1118fa59c7905072b0ff0e0f",
             "commit_message": "Fix boxed Double creation in AbstractHistogram.getStdDeviation()",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -2377,7 +2536,10 @@
             "commit": "7dc269c31ee70a50c25cbf316b6e89dc20d9ada9",
             "previous_commit": "1f39a46dfb0c49bb0e48c847adf856d68001d3de",
             "commit_message": "More precise check if subtrahend can fit in subtract()",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -2394,7 +2556,10 @@
             "commit": "7ebdb5e8ef3ff93a3ada16e053748babfc2d18e1",
             "previous_commit": "fe288b16baaabca43d0503a7a558696b1013cea6",
             "commit_message": "Replace deprecated JUnit methods",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramLogReaderWriterTest.java": {
                     "methods": [
@@ -2422,7 +2587,10 @@
             "commit": "7f1f7ede55015582dce00bcb33e45d79fa1a1a92",
             "previous_commit": "2268ca2607c54d2e10c160109521cd639d3e1a2c",
             "commit_message": "Some defensive refactoring",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -2447,7 +2615,10 @@
             "commit": "8bb4da68c04f05c54843869424037bbf809cfb45",
             "previous_commit": "debd680c844339f0913c4400ee3e22e9045e8d47",
             "commit_message": "Add synchronized hashCode() overrides",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/SynchronizedDoubleHistogram.java": {
                     "methods": [
@@ -2473,7 +2644,10 @@
             "commit": "8d181efcd113b38dd2a84509c75d9c419d452c2b",
             "previous_commit": "70f89f80699877bf1953baa19c2482d56c63ca03",
             "commit_message": "Fix race in updateMinNonZeroValue",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -2491,7 +2665,10 @@
             "commit": "90920c64df00ec2aae1dcd9a03df462b50807992",
             "previous_commit": "d85302688ede48d56b0cc66a65179676a78f88c6",
             "commit_message": "Updates test V2 hiccup log to new (ZLE instead of TZLE) V2 format. Updates test to match new log.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramLogReaderWriterTest.java": {
                     "methods": [
@@ -2520,7 +2697,10 @@
             "commit": "941dc5e12699dc2e4e26d0135b0823ad94a5569a",
             "previous_commit": "1beb18b80ff5b84b87817ca0a2a4d1884254c969",
             "commit_message": "Makes setIntegerToDoubleValueConversionRatio abstract, and supplies an explictly named  non-Concurrent implementation. Intended to make sure implementations are intentional.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/Histogram.java": {
                     "methods": [
@@ -2555,7 +2735,10 @@
             "commit": "95b3cf852473fa5b648921950f152646cac245da",
             "previous_commit": "5c7226c4ffc0e603390e4c70de3f1df35ce61a66",
             "commit_message": "Changes getValueAtPercentile() to strictly return the largest value that the percentage of recorded values in the histogram are",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramDataAccessTest.java": {
                     "methods": [
@@ -2629,7 +2812,10 @@
             "commit": "9993cd3f27875c9331cf9a571be013c4af27d681",
             "previous_commit": "5c072c079b2a1c1b0ddec7e776bb363984818a85",
             "commit_message": "Added the guilty value to the ArrayIndexOutOfBoundsException when outside the allowed Histogram range",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -2645,7 +2831,10 @@
             "commit": "9c7b0822bd196c75ef58cbef26f780fddb4aa16d",
             "previous_commit": "ec50c6ddbb158e8ff24bb1fd4e06c07680e4e7ea",
             "commit_message": "Adds fromString() for convenient decoding (in e.g. jshell)",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AtomicHistogram.java": {
                     "methods": [
@@ -2719,7 +2908,10 @@
             "commit": "9eddb35c19dfcead0c83f0fb7d4708681ad3ad39",
             "previous_commit": "90920c64df00ec2aae1dcd9a03df462b50807992",
             "commit_message": "Name cleanups in hlog file tests",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramLogReaderWriterTest.java": {
                     "methods": [
@@ -2740,7 +2932,10 @@
             "commit": "a41719a5f97eb0a477183b2a4ae6862dca0fbe3c",
             "previous_commit": "d486ea7b26063fe9979de5f48cc8db43bc61b6cb",
             "commit_message": "Cosmetics",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogReader.java": {
                     "methods": [
@@ -2776,7 +2971,10 @@
             "commit": "a54241245b2eb0ee3f24b41c118e42627d4fedee",
             "previous_commit": "d590c3a84b0e3b81c77039f78813aaf2c3697007",
             "commit_message": "Changes terminology from \"mpw\" to \"mwp\" (Moving Window Percentile)",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -2792,7 +2990,10 @@
             "commit": "a55c40ffb4c8df4c21d9cd4db34855da1b30e1d4",
             "previous_commit": "2413b056441604ee2a41dbb546fd91f9ee50d9be",
             "commit_message": "Added hashCode() override to work with equals() override.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -2856,7 +3057,10 @@
             "commit": "a7d042e8b910aee595ca453dd531b646a3c62031",
             "previous_commit": "10992b893cf8103de138941817c8d19fb0daa39c",
             "commit_message": "Cosmetics and Javadoc touchups",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -2873,7 +3077,10 @@
             "commit": "a8a41f329865c220bb6bf137146fe3f93ec7ac58",
             "previous_commit": "07794264f62e5aed954c8513a279305bf5c460b0",
             "commit_message": "Cosmetic cleanups",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AtomicHistogram.java": {
                     "methods": [
@@ -2949,7 +3156,10 @@
             "commit": "abb45f6d4a189e1faabec58871149b1cdb6369d5",
             "previous_commit": "95b3cf852473fa5b648921950f152646cac245da",
             "commit_message": "Adds test to demonstrate the two sides on the 1 ulp game in percentile calcs.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramDataAccessTest.java": {
                     "methods": [
@@ -2970,7 +3180,10 @@
             "commit": "ad520e5fc2a337fdafdd8e825660f1fb1efc11ec",
             "previous_commit": "7e9548e02bff17a382197475895488ac75424c08",
             "commit_message": "Clean up double/regular histogram logic",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -2999,7 +3212,10 @@
             "commit": "ad5a4419aa6cbbcd87f5c1ff733c017010b55e3d",
             "previous_commit": "c0069c610ef4a2c17f82f7c1f48c4da557c395d6",
             "commit_message": "Fix unpacked modes, add equals, prepare for Recorder use cases.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/packedarray/AbstractPackedArrayContext.java": {
                     "methods": [
@@ -3143,7 +3359,10 @@
             "commit": "ad76bb512b510a37f6a55fdea32f8f3dd3355771",
             "previous_commit": "5071aec2809d7d2f0564c1e81ce73c6d9e470731",
             "commit_message": "Correct spelling",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -3400,7 +3619,10 @@
             "commit": "b2c0e9899f22191a3eb50d3c02acd42de365e444",
             "previous_commit": "f33c0116b285ec1a3c5d64ebd5e8802b618c9193",
             "commit_message": "Fix logic for shifting left the lowest inactive half-bucket (adjust for before-shift normalized zero index)",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/ConcurrentHistogram.java": {
                     "methods": [
@@ -3422,7 +3644,10 @@
             "commit": "b731df4279a14d63b8571390031f58a1ac1952e1",
             "previous_commit": "df88b39ccf99496e2b8e61f7940bafbcb03799df",
             "commit_message": "touchups",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -3444,7 +3669,10 @@
             "commit": "b7622c26c63437dab6399fda38deab974d0b665c",
             "previous_commit": "ea7ae16cb9d2bce1b0da66417fe8540a0fe8a62b",
             "commit_message": "Fix exception when comparing histograms with different bucket counts",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -3499,7 +3727,10 @@
             "commit": "b8c45a6ee98003f5b5b97e6579d2ee4ad72ff761",
             "previous_commit": "ffb9aeb2dbfa72f5a0248f527b8cf26f38405e58",
             "commit_message": "Fix top level shifting while populating context (#165)",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/packedarray/AbstractPackedArrayContext.java": {
                     "methods": [
@@ -3515,7 +3746,10 @@
             "commit": "bb8ecbb4c4da80b5c8f54b4414f2fa86f7953574",
             "previous_commit": "7ee9151fe3e3c85e3d650b55dcb87e945967be92",
             "commit_message": "Make decoded histograms autosize by default",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -3539,7 +3773,10 @@
             "commit": "bc7aef6c231e1215d5be1b38074203694b71ebaf",
             "previous_commit": "6debea175f7882e60ea30521482e6f39a9c1236c",
             "commit_message": "Corrected off-by-one starting behavior for Linear and Logarithmic iterators:",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/LinearIterator.java": {
                     "methods": [
@@ -3633,7 +3870,10 @@
             "commit": "c24ac346a6e66dfcec1e81a9d16e568648bc65c0",
             "previous_commit": "ddadad81471562f2c9851ccc4d0d4f4747cca9d3",
             "commit_message": "Changes required byte count per word for TZLE with LEB128 + ZigZag to 9 bytes (from 16).",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -3667,7 +3907,10 @@
             "commit": "c2f33887b56530fd4cfa10a541697288bb1af794",
             "previous_commit": "fc382620affc0fedb79d726b6f0c4e4f9bced784",
             "commit_message": "copy/add related tweaks:",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -3723,7 +3966,10 @@
             "commit": "c410c5c2699b69ce0eb026ff954fefc4045ec363",
             "previous_commit": "296902df060cbdc1d689f63f8dec3e5fe4bf7ee0",
             "commit_message": "Move to Base64Helper API to remain portable across Java 6...9...",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogramLogReader.java": {
                     "methods": [
@@ -3756,7 +4002,10 @@
             "commit": "c458630d7060f04668da2b5cf1c5603b37d7bfea",
             "previous_commit": "55010cfe93133354a6d08dc8cdce25b69d4cf542",
             "commit_message": "Cleanup (remove unnecesary logic)",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -3772,7 +4021,10 @@
             "commit": "cb59fd8e61c05e25cad83c7b727c941a8273d4d1",
             "previous_commit": "5b6c642badd85b962cd7be09081e4738a9cf2c48",
             "commit_message": "Fixes concurrency race with auto-ranging in ConcurrentDoubleHistogram:",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -4019,7 +4271,10 @@
             "commit": "ce038909a2766273bd60d5ef586f52c1849ede09",
             "previous_commit": "a93501bad5ff55e71ffba3547af1501f022dd975",
             "commit_message": "Add start and end timestamp tagging for packed arrays. Useful in interval recording scenarios.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/packedarray/AbstractPackedLongArray.java": {
                     "methods": [
@@ -4041,7 +4296,10 @@
             "commit": "d279c913888f2fdf8dbec31f77ec2d3573f01c59",
             "previous_commit": "463fcbddf40a9963273076cca86557b664b8ac59",
             "commit_message": "Added Coordinated Omission correction on HistogramLogProcessor",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -4076,7 +4334,10 @@
             "commit": "d398bdf8d5d88db121a6ab518831941feb7387e1",
             "previous_commit": "50562b29dd978bab7aede70967d2edf83bb2d6b3",
             "commit_message": "Adds supportsAutoResize() method, and tests to verify autoResize is serialized correctly.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramTest.java": {
                     "methods": [
@@ -4096,7 +4357,10 @@
             "commit": "d590c3a84b0e3b81c77039f78813aaf2c3697007",
             "previous_commit": "fbec20ab08278502cfe69b7f522413a693641f3c",
             "commit_message": "Changes [optional] moving percentile window reporting logic to use a time window rather than an interval count window",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -4131,7 +4395,10 @@
             "commit": "dc5985ccb3ffa0eae0dd43d85ddd65f9da0573f1",
             "previous_commit": "2e9a4051ac7163c7a4f1f48540cc980d46e0fdd0",
             "commit_message": "Updated benchmakrs to work with coming 2.1.7 release. Made SkinnyHistogram stub port indepenent on HdrHistigram verison to enable benchamrk with older versions.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "HdrHistogram-benchmarks/src/main/java/org/HdrHistogram/SkinnyHistogram.java": {
                     "methods": [
@@ -4214,7 +4481,10 @@
             "commit": "dda4dbf358aa2cdc81c5629875f956ce87c81723",
             "previous_commit": "377de7da9b08c4f6cf159b3157f4a0e0492b9c39",
             "commit_message": "Handle IndexOutOfBoundsException properly on Java 8 (#180)",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/DoubleHistogram.java": {
                     "methods": [
@@ -4232,7 +4502,10 @@
             "commit": "ddadad81471562f2c9851ccc4d0d4f4747cca9d3",
             "previous_commit": "1999200d276be6b706741d88970baab6073b085a",
             "commit_message": "Changes resource file name and related name in test file",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramLogReaderWriterTest.java": {
                     "methods": [
@@ -4250,7 +4523,10 @@
             "commit": "debd680c844339f0913c4400ee3e22e9045e8d47",
             "previous_commit": "ea7ae16cb9d2bce1b0da66417fe8540a0fe8a62b",
             "commit_message": "Address potential long overflow vefore conversion to double.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -4266,7 +4542,10 @@
             "commit": "deed2b8367af0e84a8acdaf8bfc880d170c0e6c8",
             "previous_commit": "8ccc467ebc11335c654ec54e1c25b664ab0099ef",
             "commit_message": "packed array recorder updates",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/packedarray/PackedArraySingleWriterRecorder.java": {
                     "methods": [
@@ -4373,7 +4652,10 @@
             "commit": "df72c88c91a54f3d1d3af2e39499e6102e8e16d5",
             "previous_commit": "1e8ee58fa4da12e878e3231a16add1bb3e7806e1",
             "commit_message": "Added optional-enforcement-mode for containing instance on recycling",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/DoubleRecorder.java": {
                     "methods": [
@@ -4456,7 +4738,10 @@
             "commit": "df80115e09dc81ee72f0d1d6d3f95f2ac6a6744c",
             "previous_commit": "77579557702b198a1fa97c16164b3486e0ff0d20",
             "commit_message": "Refactoring suggested by Cliff Click. Revamped JavaDoc.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/WriterReaderPhaser.java": {
                     "methods": [
@@ -4482,7 +4767,10 @@
             "commit": "e0b6c609fe7b489a8ab716dd640c8d39b7d7a6ce",
             "previous_commit": "32e62f68d9e277850807f2b538bcab5971f11a55",
             "commit_message": "Changes V2 encoding from TZLE (traling zero length) to ZLE (zero length). Negative counts simply represent repeated zeros.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -4535,7 +4823,10 @@
             "commit": "e0e83cb99a4030c046f778604625e347a1bc37c8",
             "previous_commit": "b24c8b0cc00952c5c47aceeabbacf6567aeee9ee",
             "commit_message": "A more complete fix to handling large unit magnitudes",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -4727,7 +5018,10 @@
             "commit": "e175a5eb694bddea4890d760ded46dca76b17f9f",
             "previous_commit": "4e1de59b919e7cb743e6805a4f89e7aedba73847",
             "commit_message": "Add hashCode, touchup comments",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/packedarray/AbstractPackedLongArray.java": {
                     "methods": [
@@ -4764,7 +5058,10 @@
             "commit": "e1b42e03ace007acf0897d66865a7793d87bda32",
             "previous_commit": "f60bc154dcc5ce36dc0ebc153bd4e3a6e15619eb",
             "commit_message": "Cleanup refactoring on serNormalizingIndexOffset()",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/ConcurrentHistogram.java": {
                     "methods": [
@@ -4811,7 +5108,10 @@
             "commit": "e1c1d608fc185fac1f7c42412f4321cacb7993cb",
             "previous_commit": "7ebdb5e8ef3ff93a3ada16e053748babfc2d18e1",
             "commit_message": "Change class hierarchy, make ConcurrentPackedLongArray a subclass of PackedLongArray",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/packedarray/AbstractPackedArrayContext.java": {
                     "methods": [
@@ -4903,7 +5203,10 @@
             "commit": "e4ba39feedd846d797d6bacccf29d9786d5b4a40",
             "previous_commit": "e0e83cb99a4030c046f778604625e347a1bc37c8",
             "commit_message": "Fix test name, delete extra test",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramTest.java": {
                     "methods": [
@@ -4922,7 +5225,10 @@
             "commit": "e692d03654c59dfa9c5b307ad380933b8d0f36bb",
             "previous_commit": "df80115e09dc81ee72f0d1d6d3f95f2ac6a6744c",
             "commit_message": "Comment touchups",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/WriterReaderPhaser.java": {
                     "methods": [
@@ -4938,7 +5244,10 @@
             "commit": "e82afbbc1b20761b9195caf67603f4e0c48625e7",
             "previous_commit": "e9559a48564a768252516829a5b48dd6b0d31607",
             "commit_message": "small cleanups to pacify code quality tools",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -5006,7 +5315,10 @@
             "commit": "e9559a48564a768252516829a5b48dd6b0d31607",
             "previous_commit": "4674d9e50bc3067e6bc2e9725518e19a480aafe1",
             "commit_message": "Changed initialization logic to pacify code quality tools",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogProcessor.java": {
                     "methods": [
@@ -5037,7 +5349,10 @@
             "commit": "f1a99237c3a7ffd6528bfdfcb706937d84568578",
             "previous_commit": "a2173bcc69c6948d2a8c4a0c18b60341038bde92",
             "commit_message": "Changes getValueAtPercentile internal math details around fp roundoff",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -5061,7 +5376,10 @@
             "commit": "f33c0116b285ec1a3c5d64ebd5e8802b618c9193",
             "previous_commit": "1b51671cf06062671af931f98a8af2a53d335a70",
             "commit_message": "Fixes (non concurrent) shift left logic when already normalized, or when unit maghnitude is non-1",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -5090,7 +5408,10 @@
             "commit": "f4b5004799da6a8203554cea610f1b294caee37a",
             "previous_commit": "c2f33887b56530fd4cfa10a541697288bb1af794",
             "commit_message": "unit-equivalent max/min tweak",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -5117,7 +5438,10 @@
             "commit": "f8be039d5ec8fc10ed383b557df8643701db009b",
             "previous_commit": "86cf659fb91344c0fd180c9d1bb15e8222d55780",
             "commit_message": "Avoid an infinite loop in bucket calculations when unitMagnitude is big.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -5159,7 +5483,10 @@
             "commit": "fb8eb6baca91138e2dce86931d0d8c51b1de76ba",
             "previous_commit": "ad520e5fc2a337fdafdd8e825660f1fb1efc11ec",
             "commit_message": "Revert exception handling to original state",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/HistogramLogReader.java": {
                     "methods": [
@@ -5185,7 +5512,10 @@
             "commit": "fc382620affc0fedb79d726b6f0c4e4f9bced784",
             "previous_commit": "90fac67c2c6228fdedeb89c13bfa730452e25dd4",
             "commit_message": "Move synchronized double histogram test into DoubleHistogramTest and remove separate (for synchronized) test class.",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/DoubleHistogramTest.java": {
                     "methods": [
@@ -5204,7 +5534,10 @@
             "commit": "fca1366c47371dc5e69124b6180e4aea9d7fcdb7",
             "previous_commit": "f1a99237c3a7ffd6528bfdfcb706937d84568578",
             "commit_message": "Adds tests to verify valueAtPercentile match percentile and value calcs",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/test/java/org/HdrHistogram/HistogramTest.java": {
                     "methods": [
@@ -5262,7 +5595,10 @@
             "commit": "fe288b16baaabca43d0503a7a558696b1013cea6",
             "previous_commit": "52ef7ff855fffccd5b090eb954b9ffca17178a92",
             "commit_message": "Introduce packed histogram variants (#162)",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "src/main/java/org/HdrHistogram/AbstractHistogram.java": {
                     "methods": [
@@ -8694,7 +9030,10 @@
             "commit": "ff15e4dd87a94f6dcdb01971c7c8f190c8bf50c4",
             "previous_commit": "41f06eb3dab88d3bb5a0142226c860f14442aed1",
             "commit_message": "Adds jmh based benchamrking, and a comparison with SkinnyHistogram",
-            "jmh_dependency": "HdrHistogram-benchmarks",
+            "jmh_dependency": {
+                "benchmark_directory": "HdrHistogram-benchmarks",
+                "benchmark_name": "benchmarks"
+            },
             "method_changes": {
                 "HdrHistogram-benchmarks/src/main/java/bench/HdrHistogramEncodingBench.java": {
                     "methods": [
