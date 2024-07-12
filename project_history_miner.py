@@ -5,104 +5,15 @@ import os
 from xml.etree import ElementTree as ET
 from pathlib import Path
 from multiprocessing import Pool, cpu_count
-
 from git import Repo
+
+from benchmark_history_miner import get_benchmarks_info
 
 BASE_PROJECT_PATH = '/home/kavehshahedi/Documents/Projects/perf2vec/target-projects'
 POS_NS = {'pos': 'http://www.srcML.org/srcML/position'}
 
-projects = [
-    {
-        'name': 'HdrHistogram',
-        'branch': 'master',
-        'path': os.path.join(BASE_PROJECT_PATH, 'HdrHistogram')
-    },
-    {
-        'name': 'JCTools',
-        'branch': 'master',
-        'path': os.path.join(BASE_PROJECT_PATH, 'JCTools')
-    },
-    {
-        'name': 'debezium',
-        'branch': 'main',
-        'path': os.path.join(BASE_PROJECT_PATH, 'debezium')
-    },
-    {
-        'name': 'SimpleFlatMapper',
-        'branch': 'master',
-        'path': os.path.join(BASE_PROJECT_PATH, 'SimpleFlatMapper')
-    },
-    {
-        'name': 'apm-agent-java',
-        'branch': 'main',
-        'path': os.path.join(BASE_PROJECT_PATH, 'apm-agent-java')
-    },
-    {
-        'name': 'jetty',
-        'branch': 'jetty-12.0.x',
-        'path': os.path.join(BASE_PROJECT_PATH, 'jetty')
-    },
-    {
-        'name': 'netty',
-        'branch': '4.1',
-        'path': os.path.join(BASE_PROJECT_PATH, 'netty')
-    },
-    {
-        'name': 'rdf4j',
-        'branch': 'main',
-        'path': os.path.join(BASE_PROJECT_PATH, 'rdf4j')
-    },
-    {
-        'name': 'vertx',
-        'branch': 'master',
-        'path': os.path.join(BASE_PROJECT_PATH, 'vertx')
-    },
-    {
-        'name': 'zipkin',
-        'branch': 'master',
-        'path': os.path.join(BASE_PROJECT_PATH, 'zipkin')
-    },
-    {
-        'name': 'prometheus',
-        'branch': 'main',
-        'path': os.path.join(BASE_PROJECT_PATH, 'prometheus')
-    },
-    {
-        'name': 'Chronicle-Core',
-        'branch': 'ea',
-        'path': os.path.join(BASE_PROJECT_PATH, 'Chronicle-Core')
-    },
-    {
-        'name': 'log4j2',
-        'branch': '2.x',
-        'path': os.path.join(BASE_PROJECT_PATH, 'log4j2')
-    },
-    {
-        'name': 'hadoop',
-        'branch': 'trunk',
-        'path': os.path.join(BASE_PROJECT_PATH, 'hadoop')
-    },
-    {
-        'name': 'camel',
-        'branch': 'main',
-        'path': os.path.join(BASE_PROJECT_PATH, 'camel')
-    },
-    {
-        'name': 'kafka',
-        'branch': 'trunk',
-        'path': os.path.join(BASE_PROJECT_PATH, 'kafka')
-    },
-    {
-        'name': 'cassandra',
-        'branch': 'trunk',
-        'path': os.path.join(BASE_PROJECT_PATH, 'cassandra')
-    },
-    {
-        'name': 'spark',
-        'branch': 'master',
-        'path': os.path.join(BASE_PROJECT_PATH, 'spark')
-    }
-]
+with open('projects.json', 'r') as f:
+    PROJECTS = json.load(f)
 
 def get_method_class(function, root):
     if root is None or function is None:
@@ -144,7 +55,7 @@ def write_error(path, source, commit, previous_commit, extra_info):
 def process_project(project):
     project_name = project['name']
     project_branch = project['branch']
-    project_path = project['path']
+    project_path = os.path.join(BASE_PROJECT_PATH, project_name)
 
     repo = Repo(project_path)
     commits = list(repo.iter_commits(project_branch))
@@ -173,7 +84,7 @@ def process_project(project):
 
         try:
             # Checkout the commit
-            repo.git.checkout(commit.hexsha)
+            repo.git.checkout(commit.hexsha, force=True)
         except:
             write_error(commit_folder, 'git checkout', commit.hexsha, None, [])
             print(f'Error in commit {commit.hexsha}')
@@ -184,6 +95,14 @@ def process_project(project):
 
         # Get the changed .java files in the new commit
         changed_files = [file for file in commit.stats.files if str(file).endswith('.java')]
+
+        # Remove the changed files that are within the benchmark directory
+        there_is_dependency, benchmark_directory, _ = get_benchmarks_info(commit)
+        if there_is_dependency:
+            changed_files = [file for file in changed_files if not str(file).startswith(benchmark_directory)]
+
+        # Remove the test java files
+        changed_files = [file for file in changed_files if not any(substring in str(file).lower() for substring in ('/test',))]
 
         method_changes = {}
         # Iterate over all changed .java files
@@ -300,5 +219,9 @@ def process_project(project):
 
 if __name__ == '__main__':
     # Separate the projects to process them in parallel
-    with Pool(cpu_count()) as p:
-        p.map(process_project, projects)
+    # with Pool(cpu_count()) as p:
+    #     p.map(process_project, projects)
+
+    for project in PROJECTS:
+        if project["name"] == "rdf4j":
+            process_project(project)

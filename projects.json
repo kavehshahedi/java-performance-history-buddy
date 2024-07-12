@@ -1,0 +1,145 @@
+[
+    {
+        "git": {
+            "owner": "HdrHistogram",
+            "repo": "HdrHistogram"
+        },
+        "name": "HdrHistogram",
+        "branch": "master",
+        "path": "HdrHistogram",
+        "target_package": "org.HdrHistogram"
+    },
+    {
+        "git": {
+            "owner": "JCTools",
+            "repo": "JCTools"
+        },
+        "name": "JCTools",
+        "branch": "master",
+        "path": "JCTools",
+        "target_package": "org.jctools"
+    },
+    {
+        "name": "debezium",
+        "branch": "main",
+        "path": "debezium"
+    },
+    {
+        "git":{
+            "owner": "arnaudroger",
+            "repo": "SimpleFlatMapper"
+        },
+        "name": "SimpleFlatMapper",
+        "branch": "master",
+        "path": "SimpleFlatMapper",
+        "target_package": "org.simpleflatmapper",
+        "custom_commands": {
+            "benchmark": {
+                "command": "mvn -pl sfm-jmh -am -Dmaven.test.skip.exec=true -DskipTests -Dlicense.skip=true",
+                "cwd": ""
+            }
+        }
+    },
+    {
+        "name": "apm-agent-java",
+        "branch": "main",
+        "path": "apm-agent-java"
+    },
+    {
+        "name": "jetty",
+        "branch": "jetty-12.0.x",
+        "path": "jetty"
+    },
+    {
+        "name": "netty",
+        "branch": "4.1",
+        "path": "netty"
+    },
+    {
+        "git": {
+            "owner": "eclipse-rdf4j",
+            "repo": "rdf4j"
+        },
+        "name": "rdf4j",
+        "branch": "main",
+        "path": "rdf4j",
+        "target_package": "org.eclipse.rdf4j",
+        "custom_commands": {
+            "benchmark": {
+                "command": "mvn install -Dmaven.test.skip.exec=true -DskipTests -Dlicense.skip=true",
+                "cwd": "testsuites/benchmark"
+            }
+        }
+    },
+    {
+        "name": "vertx",
+        "branch": "master",
+        "path": "vertx"
+    },
+    {
+        "git":{
+            "owner": "openzipkin",
+            "repo": "zipkin"
+        },
+        "name": "zipkin",
+        "branch": "master",
+        "path": "zipkin",
+        "target_package": "zipkin",
+        "custom_commands": {
+            "benchmark": {
+                "command": "mvn install -pl benchmarks -am -Dmaven.test.skip.exec=true -DskipTests -Dlicense.skip=true",
+                "cwd": ""
+            }
+        }
+    },
+    {
+        "git":{
+            "owner": "prometheus",
+            "repo": "client_java"
+        },
+        "name": "prometheus",
+        "branch": "main",
+        "path": "prometheus",
+        "target_package": "prometheus"
+    },
+    {
+        "git": {
+            "owner": "OpenHFT",
+            "repo": "Chronicle-Core"
+        },
+        "name": "Chronicle-Core",
+        "branch": "ea",
+        "path": "Chronicle-Core",
+        "target_package": "net.openhft"
+    },
+    {
+        "name": "log4j2",
+        "branch": "2.x",
+        "path": "log4j2"
+    },
+    {
+        "name": "hadoop",
+        "branch": "trunk",
+        "path": "hadoop"
+    },
+    {
+        "name": "camel",
+        "branch": "main",
+        "path": "camel"
+    },
+    {
+        "name": "kafka",
+        "branch": "trunk",
+        "path": "kafka"
+    },
+    {
+        "name": "cassandra",
+        "branch": "trunk",
+        "path": "cassandra"
+    },
+    {
+        "name": "spark",
+        "branch": "master",
+        "path": "spark"
+    }
+]

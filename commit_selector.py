@@ -1,23 +1,21 @@
 import os
 import json
 
-BASE_PROJECT_PATH = 'C:\\Users\\eavkhas\\Personal\\Projects\\perf2vec-target-projects\\'
+BASE_PROJECT_PATH = '/home/kavehshahedi/Documents/Projects/perf2vec/target-projects'
 
-PROJECTS = [
-    {
-        'name': 'HdrHistogram',
-        'branch': 'master',
-        'path': os.path.join(BASE_PROJECT_PATH, 'HdrHistogram')
-    }
-]
+with open('projects.json', 'r') as f:
+    PROJECTS = json.load(f)
 
 if __name__ == '__main__':
     candiate_commits = {}
 
     for project in PROJECTS:
-        project_path = project['path']
+        project_path = os.path.join(BASE_PROJECT_PATH, project['path'])
         project_name = project['name']
         project_branch = project['branch']
+
+        if project_name != 'rdf4j':
+            continue
 
         project_directory = os.path.join('results', project_name)
 

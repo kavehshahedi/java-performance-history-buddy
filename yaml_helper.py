@@ -20,9 +20,10 @@ class Configuration:
         self.instrumentation = instrumentation
 
     class Instrumentation:
-        def __init__(self, target_package: Optional[str] = None, target_methods: Optional['Configuration.TargetMethods'] = None):
+        def __init__(self, target_package: Optional[str] = None, target_methods: Optional['Configuration.TargetMethods'] = None, only_visisted: bool = False):
             self.target_package = target_package
             self.target_methods = target_methods
+            self.only_visisted = only_visisted
 
 
 class YamlCreator:
@@ -46,6 +47,7 @@ class YamlCreator:
         return dumper.represent_dict({
             'targetPackage': data.target_package,
             'targetMethods': data.target_methods,
+            'onlyCheckVisited': data.only_visisted
         })
 
     def target_methods_representer(self, dumper, data):
@@ -54,7 +56,7 @@ class YamlCreator:
             'ignore': data.ignore,
         })
 
-    def create_yaml(self, log_file: str, target_package: str, instrument: List[str], ignore: List[str], yaml_file: str):
+    def create_yaml(self, log_file: str, target_package: str, instrument: List[str], ignore: List[str], yaml_file: str, only_visited=False):
         yaml = YAML()
 
         yaml.representer.add_representer(Configuration, self.config_representer)
@@ -76,7 +78,8 @@ class YamlCreator:
                 target_methods=Configuration.TargetMethods(
                     instrument=instrument,
                     ignore=ignore
-                )
+                ),
+                only_visisted=only_visited
             )
         )
 
