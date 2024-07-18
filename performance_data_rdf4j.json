@@ -1,0 +1,80 @@
+{
+    "rdf4j": {
+        "8af3cf27cfa37d0a83b7245c967a364e442c94fc": {
+            "8af3cf27cfa37d0a83b7245c967a364e442c94fc": {
+                "org.eclipse.rdf4j.benchmark.QueryOrderBenchmark.selectAll": {
+                    "protected void org.eclipse.rdf4j.sail.nativerdf.NativeStoreConnection.startTransactionInternal() throws org.eclipse.rdf4j.sail.SailException": {
+                        "total_execution_time": 5040957383,
+                        "self_execution_time": 5040957383,
+                        "average_self_time": 204916.9667886179,
+                        "cumulative_execution_time": 5040957383,
+                        "min_execution_time": 41579,
+                        "max_execution_time": 19717474,
+                        "call_count": 24600
+                    },
+                    "private org.eclipse.rdf4j.IsolationLevel org.eclipse.rdf4j.sail.base.SailSourceConnection.getIsolationLevel() throws org.eclipse.rdf4j.sail.UnknownSailTransactionStateException": {
+                        "total_execution_time": 1992376460,
+                        "self_execution_time": 1992376460,
+                        "average_self_time": 21878.859483440217,
+                        "cumulative_execution_time": 1992376460,
+                        "min_execution_time": 1980,
+                        "max_execution_time": 4793075,
+                        "call_count": 91064
+                    },
+                    "private void org.eclipse.rdf4j.sail.base.SailSourceBranch.flush(org.eclipse.rdf4j.sail.base.Changeset,org.eclipse.rdf4j.sail.base.SailSink) throws org.eclipse.rdf4j.sail.SailException": {
+                        "total_execution_time": 674271412842,
+                        "self_execution_time": 674271412842,
+                        "average_self_time": 27409407.026097562,
+                        "cumulative_execution_time": 674271412842,
+                        "min_execution_time": 20548514,
+                        "max_execution_time": 374320986,
+                        "call_count": 24600
+                    }
+                },
+                "org.eclipse.rdf4j.benchmark.ForwardChainingRDFSInferencerBenchmark.initialize": {
+                    "public boolean org.eclipse.rdf4j.model.impl.LinkedHashModel.add(org.eclipse.rdf4j.model.Statement)": {
+                        "total_execution_time": 5817420798,
+                        "self_execution_time": 5817420798,
+                        "average_self_time": 1910.586550010099,
+                        "cumulative_execution_time": 5817420798,
+                        "min_execution_time": 1015,
+                        "max_execution_time": 6172955,
+                        "call_count": 3044835
+                    }
+                }
+            },
+            "3d5aa1bc78d9d1efb9703a8235404b9ed5192c9c": {
+                "org.eclipse.rdf4j.benchmark.QueryOrderBenchmark.selectAll": {
+                    "protected void org.eclipse.rdf4j.sail.nativerdf.NativeStoreConnection.startTransactionInternal() throws org.eclipse.rdf4j.sail.SailException": {
+                        "total_execution_time": 5274341576,
+                        "self_execution_time": 5274341576,
+                        "average_self_time": 214404.12910569107,
+                        "cumulative_execution_time": 5274341576,
+                        "min_execution_time": 22407,
+                        "max_execution_time": 26040950,
+                        "call_count": 24600
+                    },
+                    "private org.eclipse.rdf4j.IsolationLevel org.eclipse.rdf4j.sail.base.SailSourceConnection.getIsolationLevel() throws org.eclipse.rdf4j.sail.UnknownSailTransactionStateException": {
+                        "total_execution_time": 1986545004,
+                        "self_execution_time": 1986545004,
+                        "average_self_time": 21725.59552921105,
+                        "cumulative_execution_time": 1986545004,
+                        "min_execution_time": 1950,
+                        "max_execution_time": 1198054,
+                        "call_count": 91438
+                    },
+                    "private void org.eclipse.rdf4j.sail.base.SailSourceBranch.flush(org.eclipse.rdf4j.sail.base.Changeset,org.eclipse.rdf4j.sail.base.SailSink) throws org.eclipse.rdf4j.sail.SailException": {
+                        "total_execution_time": 683768437805,
+                        "self_execution_time": 683768437805,
+                        "average_self_time": 27795464.951422766,
+                        "cumulative_execution_time": 683768437805,
+                        "min_execution_time": 19346283,
+                        "max_execution_time": 372785447,
+                        "call_count": 24600
+                    }
+                },
+                "org.eclipse.rdf4j.benchmark.ForwardChainingRDFSInferencerBenchmark.initialize": {}
+            }
+        }
+    }
+}
