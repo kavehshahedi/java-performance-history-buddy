@@ -14,7 +14,7 @@ if __name__ == '__main__':
     os.sched_setaffinity(0, list(range(0, 16)))
 
     for project in PROJECTS:
-        if project['name'] != 'HdrHistogram':
+        if project['name'] != 'prometheus':
             continue
 
         pipeline = Pipeline(project=project, base_project_path=BASE_PROJECT_PATH)

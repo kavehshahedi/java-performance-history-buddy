@@ -42,9 +42,16 @@ class FileUtils:
             os.remove(path)
 
     @staticmethod
-    def create_directory(directory_path: str):
+    def create_directory(directory_path: str, remove_contents: bool = False):
         if not FileUtils.is_path_exists(directory_path):
             os.makedirs(directory_path, exist_ok=True)
+
+        if remove_contents:
+            for root, dirs, files in os.walk(directory_path):
+                for file in files:
+                    os.remove(os.path.join(root, file))
+                for dir in dirs:
+                    os.rmdir(os.path.join(root, dir))
     
     @staticmethod
     def read_json_file(file_path: str, create_if_not_exists: bool = True) -> dict:

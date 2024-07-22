@@ -56,11 +56,8 @@ class CommitCandidator:
             if not buildable:
                 continue
 
-            # Get commit's surrounding release commits
-            repo = Repo(self.project_path)
-            prev_release_commit_hash, next_release_commit_hash = git_service.find_surrounding_releases(repo=repo, commit_hash=commit_hash)
-
             # Find the Java version used in the commit
+            repo = Repo(self.project_path)
             repo.git.checkout(commit_hash, force=True)
             pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
             java_version = pom_service.get_java_version()
@@ -72,6 +69,9 @@ class CommitCandidator:
             if float(java_version) < 1.8:
                 java_version = "1.8"
                 should_update_pom = True
+
+            # Find the previous and next release commits
+            prev_release_commit_hash, next_release_commit_hash = git_service.find_surrounding_releases(repo=repo, commit_hash=commit_hash)
 
             # Add the commit to the list of candidate commits
             self.candidate_commits.append({

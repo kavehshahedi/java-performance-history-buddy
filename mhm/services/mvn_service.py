@@ -1,5 +1,6 @@
 import subprocess
 import os
+import bisect
 from typing import Optional
 
 JAVA_HOME_PATHS = {
@@ -12,7 +13,13 @@ class MvnService:
     def __init__(self) -> None:
         pass
 
-    def install(self, cwd: str, custom_command: Optional[list] = None, java_version: str = '11', verbose: bool = False, is_shell: bool = False, timeout: int = 600) -> bool:
+    def install(self, cwd: str,
+                custom_command: Optional[list] = None,
+                java_version: str = '11',
+                verbose: bool = False,
+                is_shell: bool = False,
+                retry_with_other_java_versions: bool = False,
+                timeout: int = 600) -> tuple[bool, str]:
         command = [
             'mvn',
             'clean',
@@ -28,9 +35,15 @@ class MvnService:
         if custom_command is not None:
             command = custom_command
 
-        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, timeout)
+        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout)
 
-    def package(self, cwd: str, custom_command: Optional[list] = None, java_version: str = '11', verbose: bool = False, is_shell: bool = False, timeout: int = 600) -> bool:
+    def package(self, cwd: str,
+                custom_command: Optional[list] = None,
+                java_version: str = '11',
+                verbose: bool = False,
+                is_shell: bool = False,
+                retry_with_other_java_versions: bool = False,
+                timeout: int = 600) -> tuple[bool, str]:
         command = [
             'mvn',
             'clean',
@@ -46,15 +59,37 @@ class MvnService:
         if custom_command is not None:
             command = custom_command
 
-        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, timeout)
+        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout)
     
-    def __run_mvn_command(self, cwd: str, command: list, java_version: str, verbose: bool, is_shell: bool, timeout: int) -> bool:
-        env = self.__update_java_home(java_version)
+    def __run_mvn_command(self, cwd: str,
+                          command: list,
+                          java_version: str,
+                          verbose: bool,
+                          is_shell: bool,
+                          retry_with_other_java_versions: bool,
+                          timeout: int) -> tuple[bool, str]:
+        while True:
+            env = MvnService.update_java_home(java_version)
 
-        process = subprocess.run(command, cwd=cwd, capture_output=not verbose, shell=is_shell, timeout=timeout, env=env)
-        return process.returncode == 0
+            process = subprocess.run(command, cwd=cwd, capture_output=not verbose, shell=is_shell, timeout=timeout, env=env)
+
+            if process.returncode == 0:
+                return True, java_version
+
+            if not retry_with_other_java_versions:
+                return False, java_version
+
+            # Find the next higher Java version
+            java_versions = sorted(JAVA_HOME_PATHS.keys())
+            next_version = next((jv for jv in java_versions if jv > java_version), None)
+
+            if next_version is None:
+                return False, java_version
+
+            java_version = next_version
     
-    def __update_java_home(self, java_version: str) -> dict:
+    @staticmethod
+    def update_java_home(java_version: str) -> dict:
         env = os.environ.copy()
         if java_version in JAVA_HOME_PATHS:
             java_home = JAVA_HOME_PATHS[java_version]

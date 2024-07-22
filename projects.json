@@ -95,20 +95,20 @@
     {
         "git":{
             "owner": "prometheus",
-            "repo": "client_java"
+            "repo": "client_java",
+            "branch": "main"
         },
         "name": "prometheus",
-        "branch": "main",
         "path": "prometheus",
         "target_package": "prometheus"
     },
     {
         "git": {
             "owner": "OpenHFT",
-            "repo": "Chronicle-Core"
+            "repo": "Chronicle-Core",
+            "branch": "ea"
         },
         "name": "Chronicle-Core",
-        "branch": "ea",
         "path": "Chronicle-Core",
         "target_package": "net.openhft"
     },

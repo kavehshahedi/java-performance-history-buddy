@@ -17,6 +17,17 @@ class PomService:
         
         self.root = self.tree.getroot()
         self.properties = self.root.find('mvn:properties', self.namespace)
+
+    def __normalize_java_version(self, version: str) -> str:
+        if version.startswith("1."):
+            return version
+        try:
+            version_num = int(version)
+            if version_num < 10:
+                return f"1.{version_num}"
+            return str(version_num)
+        except ValueError:
+            return version
     
     def __resolve_property(self, value) -> str:
         if value and value.startswith('${') and value.endswith('}'):
@@ -53,6 +64,17 @@ class PomService:
         
         return None
     
+    def __get_java_version_from_profiles(self) -> Union[str, None]:
+        profiles = self.root.find('mvn:profiles', self.namespace)
+        if profiles is not None:
+            for profile in profiles.findall('mvn:profile', self.namespace):
+                build = profile.find('mvn:build', self.namespace)
+                if build is not None:
+                    java_version = self.__find_java_version_in_plugin_container(build.find('mvn:plugins', self.namespace))
+                    if java_version is not None:
+                        return java_version
+        return None
+
     def __find_java_version_in_plugin_container(self, plugins) -> Union[str, None]:
         if plugins is not None:
             for plugin in plugins.findall('mvn:plugin', self.namespace):
@@ -84,6 +106,7 @@ class PomService:
 
     def __save(self):
         if self.pom_path is not None:
+            ET.register_namespace('', self.namespace['mvn'])
             self.tree.write(self.pom_path, encoding='utf-8', xml_declaration=True)
 
     def get_java_version(self) -> Union[str, None]:
@@ -91,10 +114,15 @@ class PomService:
         
         if java_version is None:
             java_version = self.__get_java_version_from_plugins()
+
+        if java_version is None:
+            java_version = self.__get_java_version_from_profiles()
         
-        return java_version
+        return self.__normalize_java_version(java_version) if java_version is not None else None
     
     def set_java_version(self, new_version: str, save: bool = True):
+        new_version = self.__normalize_java_version(new_version)
+
         if self.properties is not None:
             source = self.properties.find('mvn:maven.compiler.source', self.namespace)
             version = self.properties.find('mvn:java.version', self.namespace)
@@ -112,3 +140,27 @@ class PomService:
 
         if save:
             self.__save()
+
+    def get_jar_name(self) -> str:
+        artifact_id = self.root.find('mvn:artifactId', self.namespace)
+        version = self.root.find('mvn:version', self.namespace)
+        build = self.root.find('mvn:build', self.namespace)
+        final_name = None
+
+        if build is not None:
+            final_name_element = build.find('mvn:finalName', self.namespace)
+            if final_name_element is not None:
+                final_name = self.__resolve_property(final_name_element.text)
+
+        if final_name:
+            jar_name = final_name + '.jar'
+        else:
+            if artifact_id is not None:
+                if version is not None:
+                    jar_name = f'{self.__resolve_property(artifact_id.text)}-{self.__resolve_property(version.text)}.jar'
+                else:
+                    jar_name = f'{self.__resolve_property(artifact_id.text)}.jar'
+            else:
+                jar_name = ''
+
+        return jar_name

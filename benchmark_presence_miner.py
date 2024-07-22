@@ -6,6 +6,8 @@ import xml.etree.ElementTree as ET
 from mhm.utils.file_utils import FileUtils
 from mhm.utils.printer import Printer
 
+from mhm.services.pom_service import PomService
+
 
 class BenchmarkPresenceMiner:
 
@@ -43,22 +45,18 @@ class BenchmarkPresenceMiner:
 
                 # Check whether the pom.xml file contains a dependency to JMH
                 if 'jmh-core' in pom_content:
-                    # # Check if it isn't the main pom.xml file that is in the root directory of the project
-                    # # We should check the blob path to make sure that the pom.xml file is not in the root directory
-                    # if blob.path == 'pom.xml':
-                    #     continue
+                    # Check if it isn't the main pom.xml file that is in the root directory of the project
+                    # We should check the blob path to make sure that the pom.xml file is not in the root directory
+                    if blob.path == 'pom.xml':
+                        continue
 
                     there_is_dependency = True
                     benchmark_directory = os.path.dirname(blob.path)
 
-                    # Remove the namespace from the pom.xml file
-                    pom_content = re.sub(r'\sxmlns="[^"]+"', '', pom_content, count=1)
+                    # Extract the benchmark name from the pom.xml file
+                    pom_service = PomService(pom_content)
+                    benchmark_name = pom_service.get_jar_name()
 
-                    root = ET.fromstring(pom_content)
-                    final_name = root.find('.//finalName')
-                    if final_name is not None:
-                        benchmark_name = str(final_name.text).strip()
-                        
                     break
 
         return there_is_dependency, benchmark_directory, benchmark_name
