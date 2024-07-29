@@ -92,15 +92,27 @@ class ProjectChangeMiner:
             # Remove the deleted or moved files (since we check the new code for diff)
             deleted_mapped_files = {}
             for f_name, f_data in commit.stats.files.items():
+                if not str(f_name).endswith('.java'):
+                    continue
+
                 if f_data['insertions'] == 0 and f_data['deletions'] == f_data['lines']:
                     # Check its refactorings
                     f_refactorings = refactoring_miner.get_refactorings_for_file(all_refactorings, str(f_name))
                     is_replaced, new_file = refactoring_miner.is_file_replaced(f_refactorings, str(f_name))
                     if is_replaced and f_name in changed_files:
-                        changed_files = [file for file in changed_files if file != f_name]
-
                         # Map the deleted file to the new file
                         deleted_mapped_files[new_file] = f_name
+
+                    changed_files = [file for file in changed_files if file != f_name]
+
+            # Check which files have been newly added in the new commit that were not in the previous commit entirely (i.e., not refactored)
+            for f_name, f_data in commit.stats.files.items():
+                if not str(f_name).endswith('.java'):
+                    continue
+
+                if f_data['insertions'] == f_data['lines']:
+                    if f_name not in deleted_mapped_files and f_name in changed_files:
+                        changed_files = [file for file in changed_files if file != f_name]
 
             method_changes = {}
             # Iterate over all changed .java files
@@ -120,6 +132,10 @@ class ProjectChangeMiner:
 
                 java_service = JavaService()
                 different_methods = java_service.get_different_methods(new_file, old_file)
+                
+                # NOTE: Temporary
+                # Remove the methods that 'second' is null
+                different_methods = [diff for diff in different_methods if diff['second']]
 
                 srcml_service = SrcMLService()
                 for file_, commit_, diff_key in [(file, commit, 'first'), (old_file_name, previous_commit, 'second')]:

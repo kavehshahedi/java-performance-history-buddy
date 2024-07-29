@@ -45,7 +45,7 @@ class Pipeline:
                                     project_path=self.project_path, 
                                     project_branch=self.git_info['branch'],
                                     printer_indent=1)
-            pcm.mine()
+            pcm.mine(force=False)
 
             # Step 3: Mine benchmark presence
             Printer.separator()

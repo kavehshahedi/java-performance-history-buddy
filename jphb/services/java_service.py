@@ -27,7 +27,7 @@ class JavaService:
 
         return javalang.parse.parse(code)
     
-    def get_different_methods(self, first_code: str, second_code: str) -> list[str]:
+    def get_different_methods(self, first_code: str, second_code: str) -> list[dict]:
         """
         This method gets two Java code snippets and returns the methods that are different between them.
         """
