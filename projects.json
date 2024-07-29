@@ -20,17 +20,22 @@
         "target_package": "org.jctools"
     },
     {
+        "git": {
+            "owner": "debezium",
+            "repo": "debezium",
+            "branch": "main"
+        },
         "name": "debezium",
-        "branch": "main",
-        "path": "debezium"
+        "path": "debezium",
+        "target_package": "io.debezium"
     },
     {
         "git":{
             "owner": "arnaudroger",
-            "repo": "SimpleFlatMapper"
+            "repo": "SimpleFlatMapper",
+            "branch": "master"
         },
         "name": "SimpleFlatMapper",
-        "branch": "master",
         "path": "SimpleFlatMapper",
         "target_package": "org.simpleflatmapper",
         "custom_commands": {
@@ -41,19 +46,34 @@
         }
     },
     {
+        "git": {
+            "owner": "elastic",
+            "repo": "apm-agent-java",
+            "branch": "main"
+        },
         "name": "apm-agent-java",
-        "branch": "main",
-        "path": "apm-agent-java"
+        "path": "apm-agent-java",
+        "target_package": "co.elastic.apm"
     },
     {
+        "git": {
+            "owner": "eclipse",
+            "repo": "jetty.project",
+            "branch": "jetty-12.0.x"
+        },
         "name": "jetty",
-        "branch": "jetty-12.0.x",
-        "path": "jetty"
+        "path": "jetty",
+        "target_package": "org.eclipse.jetty"
     },
     {
+        "git": {
+            "owner": "netty",
+            "repo": "netty",
+            "branch": "4.1"
+        },
         "name": "netty",
-        "branch": "4.1",
-        "path": "netty"
+        "path": "netty",
+        "target_package": "io.netty"
     },
     {
         "git": {
@@ -72,17 +92,22 @@
         }
     },
     {
+        "git": {
+            "owner": "eclipse",
+            "repo": "vert.x",
+            "branch": "master"
+        },
         "name": "vertx",
-        "branch": "master",
-        "path": "vertx"
+        "path": "vertx",
+        "target_package": "io.vertx"
     },
     {
         "git":{
             "owner": "openzipkin",
-            "repo": "zipkin"
+            "repo": "zipkin",
+            "branch": "master"
         },
         "name": "zipkin",
-        "branch": "master",
         "path": "zipkin",
         "target_package": "zipkin",
         "custom_commands": {
@@ -98,9 +123,9 @@
             "repo": "client_java",
             "branch": "main"
         },
-        "name": "prometheus",
+        "name": "client_java",
         "path": "prometheus",
-        "target_package": "prometheus"
+        "target_package": "io.prometheus"
     },
     {
         "git": {
