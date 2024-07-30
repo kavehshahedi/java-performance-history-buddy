@@ -84,6 +84,7 @@ class CommitCandidator:
             self.candidate_commits.append({
                 'commit': commit_hash,
                 'previous_commit': previous_commit,
+                'date': repo.commit(commit_hash).committed_date,
                 'releases': {
                     'previous': prev_release_commit_hash,
                     'next': next_release_commit_hash
@@ -100,13 +101,8 @@ class CommitCandidator:
                 }
             })
 
-        # Sort the candidate commits by the number of lines changed
-        for commit_ in self.candidate_commits:
-            count = 0
-            for _, data in commit_['method_changes'].items():
-                count += len(data['lines'])
-            commit_['num_changed_lines'] = count
-        self.candidate_commits = sorted(self.candidate_commits, key=lambda x: x['num_changed_lines'], reverse=True)
+        # Sort the candidate commits by their date
+        self.candidate_commits = sorted(self.candidate_commits, key=lambda x: x['date'], reverse=True)
 
         Printer.success(f'Project {self.project_name} has {len(self.candidate_commits)} candidate commits', num_indentations=self.printer_indent)
 
