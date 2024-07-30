@@ -156,6 +156,14 @@ class ProjectChangeMiner:
             # Convert the sets to lists
             method_changes = {file: {commit.hexsha: list(data[commit.hexsha]), previous_commit.hexsha: list(data[previous_commit.hexsha])} for file, data in method_changes.items()}
 
+            # Change the structure of the method changes
+            new_method_changes = {}
+            for file, data in method_changes.items():
+                for commit_hash, methods in data.items():
+                    new_method_changes[commit_hash] = new_method_changes.get(commit_hash, {})
+                    new_method_changes[commit_hash][file] = methods
+            method_changes = new_method_changes
+
             if method_changes:
                 # Save the method changes in a json file
                 FileUtils.write_json_file(os.path.join(commit_folder, 'method_changes.json'), method_changes)
@@ -170,4 +178,4 @@ class ProjectChangeMiner:
                 }
                 FileUtils.write_json_file(os.path.join(commit_folder, 'commit_details.json'), commit_info)
 
-            Printer.success(f'Commit {commit.hexsha} processed successfully with {len(method_changes)} changed methods', num_indentations=self.printer_indent)
+            Printer.success(f'Commit {commit.hexsha} processed successfully', num_indentations=self.printer_indent)

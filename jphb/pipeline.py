@@ -103,7 +103,7 @@ class Pipeline:
             executed, performance_data = executor.execute(jmh_dependency=candidate_commit['jmh_dependency'],
                                                         current_commit_hash=candidate_commit['commit'],
                                                         previous_commit_hash=candidate_commit['previous_commit'],
-                                                        changed_methods=[str(m) for cm in candidate_commit['method_changes'].values() for m in cm['methods']],
+                                                        changed_methods={commit_hash: [m for method_ in files.values() for m in method_] for commit_hash, files in candidate_commit['method_changes'].items()},
                                                         target_package=self.target_package,
                                                         custom_commands=self.custom_commands,
                                                         java_version=candidate_commit['java_version'])

@@ -42,7 +42,7 @@ class BenchmarkExecutor:
     def execute(self, jmh_dependency: dict,
                 current_commit_hash: str,
                 previous_commit_hash: str,
-                changed_methods: list[str],
+                changed_methods: dict[str, list[str]],
                 target_package: str,
                 java_version: dict,
                 custom_commands: Optional[dict] = None) -> Tuple[bool, Optional[dict]]:
@@ -222,7 +222,7 @@ class BenchmarkExecutor:
 
         # Check if the benchmarks are targeting the changed methods
         Printer.info('Checking if benchmark is targeting changed methods...', num_indentations=self.printer_indent)
-        chosen_benchmarks = {}
+        chosen_benchmarks:dict[str, dict[str, list[str]]] = {}
         for tm in target_methods:
             tm_benchmark = tm['benchmark']
             tm_methods = tm['methods']
@@ -239,62 +239,67 @@ class BenchmarkExecutor:
             Printer.error(f'No benchmarks are targeting the changed methods', num_indentations=self.printer_indent+1)
             return False, None
 
-        # Empty the execution directory first
-        config_directory = os.path.join('results', self.project_name, 'commits', commit.hexsha, 'execution')
-        FileUtils.create_directory(config_directory, remove_contents=True)
-
         # We want to minimize the number of benchmarks for running
         chosen_benchmarks = self.__minimize_and_distribute_methods(benchmarks=chosen_benchmarks)
-        for benchmark, methods in chosen_benchmarks.items():
-            Printer.success(f'Benchmark {benchmark} is targeting {len(methods)} methods', num_indentations=self.printer_indent+1)
 
-            # Create the YAML file
-            YamlCreator().create_yaml(
-                log_file=os.path.join(config_directory, f'{benchmark}.log'),
-                target_package=target_package,
-                instrument=methods,
-                ignore=[],
-                yaml_file=os.path.join(config_directory, f'{benchmark}.yaml')
-            )
-
-        # Run the benchmarks
         performance_results = {}
-        for commit_hash in [current_commit_hash, previous_commit_hash]:
-            Printer.info(f'Checking out to {"current" if commit_hash == current_commit_hash else "previous"} commit...', num_indentations=self.printer_indent)
+        for commit_hash_, chosen_benchmarks_ in chosen_benchmarks.items():
+            # Empty the execution directory first
+            config_directory = os.path.join('results', self.project_name, 'commits', commit.hexsha, 'execution', commit_hash_)
+            FileUtils.create_directory(config_directory, remove_contents=True)
+
+            for benchmark, methods in chosen_benchmarks_.items():
+                Printer.success(f'Benchmark {benchmark} is targeting {len(methods)} methods', num_indentations=self.printer_indent+1)
+
+                # Create the YAML file
+                YamlCreator().create_yaml(
+                    log_file=os.path.join(config_directory, f'{benchmark}.log'),
+                    target_package=target_package,
+                    instrument=methods,
+                    ignore=[],
+                    yaml_file=os.path.join(config_directory, f'{benchmark}.yaml')
+                )
+
+            # Run the benchmarks
+            Printer.info(f'Checking out to {"current" if commit_hash_ == current_commit_hash else "previous"} commit...', num_indentations=self.printer_indent)
             # Checkout the commit. If already checked out, no need to checkout again
 
-            if commit_hash != current_commit_hash:
-                self.repo.git.checkout(commit_hash, force=True)
+            if commit_hash_ != current_commit_hash:
+                self.repo.git.checkout(commit_hash_, force=True)
+
                 # If the Java version should be updated, update the pom.xml file
                 if java_version['should_update_pom']:
                     pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
                     pom_service.set_java_version(self.java_version)
 
-                self.__replace_benchmarks(from_commit_hash=commit_to_use_for_benchmark,
-                                            to_commit_hash=commit_hash,
-                                            benchmark_directory=project_benchmark_directory)
+                if not has_same_benchmarks and commit_to_use_for_benchmark != current_commit_hash:
+                    Printer.info(f'Replacing the benchmarks with the other commit...', num_indentations=self.printer_indent)
+                    self.__replace_benchmarks(from_commit_hash=commit_to_use_for_benchmark,
+                                                to_commit_hash=commit_hash_,
+                                                benchmark_directory=project_benchmark_directory)
+                    
                 self.__build_project(project_path=self.project_path,
-                                            commit_hash=commit_hash,
+                                            commit_hash=commit_hash_,
                                             build_anyway=True, # Since we need to run the benchmarks, we build them anyway
                                             java_version=self.java_version)
                 self.__build_benchmarks(project_path=self.project_path,
                                         benchmark_directory=project_benchmark_directory,
-                                        benchmark_commit_hash=commit_hash,
+                                        benchmark_commit_hash=commit_hash_,
                                         build_anyway=True, # Since we need to run the benchmarks, we build them anyway
                                         java_version=self.java_version,
                                         custom_command = custom_commands['benchmark'] if custom_commands and 'benchmark' in custom_commands else None)
 
             Printer.info('Running benchmarks...', num_indentations=self.printer_indent+1)
             performance_data = self.__run_benchmark_and_get_performance_data(project_path=self.project_path,
-                                                                             benchmark_jar_path=benchmark_jar_path,
-                                                                             config_directory=config_directory,
-                                                                             java_version=self.java_version)
+                                                                            benchmark_jar_path=benchmark_jar_path,
+                                                                            config_directory=config_directory,
+                                                                            java_version=self.java_version)
             if not performance_data:
                 Printer.error(f'Error while running benchmarks for getting performance data', num_indentations=self.printer_indent+2)
                 return False, None
             Printer.success(f'Benchmarks are executed successfully', num_indentations=self.printer_indent+2)
 
-            performance_results[commit_hash] = performance_data
+            performance_results[commit_hash_] = performance_data
 
         # NOTE: Not sure if we need to remove the execution directory for now
         # # Remove the execution directory
@@ -491,44 +496,61 @@ class BenchmarkExecutor:
 
         return list(target_methods)
 
-    def __is_benchmark_targeting_changed_methods(self, changed_methods: list, target_methods: list[str]) -> Tuple[bool, list[str]]:
+    def __is_benchmark_targeting_changed_methods(self,
+                                                 changed_methods: dict[str, list[str]], # The list of changed methods in the commit
+                                                 target_methods: list[str] # The list of methods that the benchmark executes
+                                                 ) -> Tuple[bool, dict[str, list[str]]]:
         # Preprocess the target functions once and store the results in a set
         tf = {f.split('(')[0].strip().split(' ')[-1].strip() for f in target_methods}
 
-        # Use set comprehension to directly add the matching methods
-        chosen_methods = {method for method in changed_methods if method.split('(')[0].strip().split(' ')[-1].strip() in tf}
+        chosen_methods = {commit_hash: [] for commit_hash in changed_methods.keys()}
+        for commit_hash, methods in changed_methods.items():
+            # Use set comprehension to directly add the matching methods
+            chosen_methods[commit_hash] = [method for method in methods if method.split('(')[0].strip().split(' ')[-1].strip() in tf]
 
-        return len(chosen_methods) > 0, list(chosen_methods)
+        return len(list(chosen_methods.values())[0]) > 0, chosen_methods
 
-    def __minimize_and_distribute_methods(self, benchmarks: dict[str, list[str]]) -> dict[str, list[str]]:
+    def __minimize_and_distribute_methods(self, benchmarks: dict[str, dict[str, list[str]]]) -> dict[str, dict[str, list[str]]]:
         # Create a set of all methods to be covered
         all_methods = set()
-        for methods in benchmarks.values():
-            all_methods.update(methods)
+        for method_dict in benchmarks.values():
+            for methods in method_dict.values():
+                all_methods.update(methods)
 
         # Create a list of benchmarks sorted by the number of unique methods they cover in descending order
-        sorted_benchmarks = sorted(benchmarks.items(), key=lambda x: len(x[1]), reverse=True)
+        sorted_benchmarks = sorted(
+            ((benchmark, {method_id: methods for method_id, methods in method_dict.items()})
+            for benchmark, method_dict in benchmarks.items()),
+            key=lambda x: len({method for methods in x[1].values() for method in methods}),
+            reverse=True
+        )
 
         selected_benchmarks = {}
         covered_methods = set()
 
         # Select benchmarks iteratively
         while covered_methods != all_methods:
-            for benchmark, methods in sorted_benchmarks:
+            for benchmark, method_dict in sorted_benchmarks:
                 # Calculate the new methods this benchmark will cover
-                new_methods = set(methods) - covered_methods
+                new_methods = {method for methods in method_dict.values() for method in methods} - covered_methods
                 if new_methods:
-                    # Select this benchmark and assign it the new methods
-                    selected_benchmarks[benchmark] = new_methods
+                    # Assign new methods to their respective commit hashes in the selected benchmarks
+                    for method_id, methods in method_dict.items():
+                        if any(method in new_methods for method in methods):
+                            if method_id not in selected_benchmarks:
+                                selected_benchmarks[method_id] = {}
+                            if benchmark not in selected_benchmarks[method_id]:
+                                selected_benchmarks[method_id][benchmark] = []
+                            selected_benchmarks[method_id][benchmark].extend(
+                                method for method in methods if method in new_methods
+                            )
                     covered_methods.update(new_methods)
                     # Remove the selected benchmark from the list
                     sorted_benchmarks = [b for b in sorted_benchmarks if b[0] != benchmark]
                     break
 
-        # Covert set to list
-        selected_benchmarks = {k: list(v) for k, v in selected_benchmarks.items()}
-
         return selected_benchmarks
+
 
     def __run_benchmark_and_get_performance_data(self, project_path: str,
                                                  benchmark_jar_path: str,
