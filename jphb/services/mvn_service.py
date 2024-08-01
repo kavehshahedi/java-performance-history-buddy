@@ -6,7 +6,8 @@ from typing import Optional
 JAVA_HOME_PATHS = {
     '1.8': '/usr/lib/jvm/java-8-openjdk-amd64',
     '11': '/usr/lib/jvm/java-11-openjdk-amd64',
-    '17': '/usr/lib/jvm/java-17-openjdk-amd64'
+    '17': '/usr/lib/jvm/java-17-openjdk-amd64',
+    '21': '/usr/lib/jvm/java-21-openjdk-amd64'
 }
 
 class MvnService:

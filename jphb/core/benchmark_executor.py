@@ -236,7 +236,7 @@ class BenchmarkExecutor:
 
         # If no benchmarks are targeting the changed methods, return (i.e., skip the commit)
         if not chosen_benchmarks:
-            Printer.error(f'No benchmarks are targeting the changed methods', num_indentations=self.printer_indent+1)
+            Printer.warning(f'No benchmarks are targeting the changed methods', num_indentations=self.printer_indent+1)
             return False, None
 
         # We want to minimize the number of benchmarks for running
