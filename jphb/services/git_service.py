@@ -6,7 +6,7 @@ import bisect
 
 dotenv.load_dotenv()
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "INVALID_GIT_TOKEN")
+GITHUB_TOKEN = os.getenv('GITHUB_TOKEN', 'INVALID_GIT_TOKEN')
 
 class GitService:
 
@@ -16,13 +16,14 @@ class GitService:
 
         self.build_history = {}
 
-    def clone_repo(self, repo_path: str) -> bool:
+    def clone_repo(self, repo_path: str, branch: str) -> tuple[bool, int, str]:
         try:
             git.Repo.clone_from(url=f'https://github.com/{self.owner}/{self.repo_name}.git',
                                 to_path=repo_path)
-            return True
+            repo = git.Repo(repo_path)
+            return True, len(list(repo.iter_commits(rev=branch))), str(repo.head.object.hexsha)
         except Exception as e:
-            return False
+            return False, 0, ''
 
     def is_github_builable(self, commit_hash: str) -> bool:
         # First, we check if we have already checked the build status of this commit

@@ -458,7 +458,8 @@ class BenchmarkExecutor:
             instrument=[],
             ignore=[],
             only_visited=True,
-            yaml_file=config_path
+            yaml_file=config_path,
+            add_timestamp_to_file_names=True
         )
 
         mvn_service = MvnService()
@@ -482,11 +483,10 @@ class BenchmarkExecutor:
 
         target_methods = set()
 
-        # Read the log file
-        with open(os.path.join(log_path), 'r') as f:
-            for line in f:
-                target_methods.add(
-                    ' '.join(line.strip().split(' ')[2:]).split('(')[0].strip())
+        converted_trace_data = PerformanceAnalysis.get_trace_data_well_formatted(log_path)
+        for line in converted_trace_data:
+            target_methods.add(
+                ' '.join(line.strip().split(' ')[2:]).split('(')[0].strip())
 
         return list(target_methods)
 

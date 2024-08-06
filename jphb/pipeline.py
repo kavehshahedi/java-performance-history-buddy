@@ -9,6 +9,7 @@ from jphb.core.commit_candidator import CommitCandidator
 from jphb.core.benchmark_executor import BenchmarkExecutor
 
 from jphb.services.git_service import GitService
+from jphb.services.db_service import DBService
 
 from jphb.utils.printer import Printer
 from jphb.utils.file_utils import FileUtils
@@ -27,6 +28,8 @@ class Pipeline:
         self.custom_commands = project.get('custom_commands', None)
         self.use_lttng = use_lttng
 
+        self.db_service = DBService()
+
     def run(self) -> None:
         # First we check if the candidate commits have already been selected
         candidate_commits_file_path = os.path.join('results', self.project_name, 'candidate_commits.json')
@@ -35,10 +38,15 @@ class Pipeline:
             if not FileUtils.is_path_exists(self.project_path):
                 Printer.info(f'Cloning {self.project_name}...', bold=True)
                 git_service = GitService(owner=self.git_info['owner'], repo_name=self.git_info['repo'])
-                cloned = git_service.clone_repo(repo_path=self.project_path)
+                cloned, num_commits, head_commit_hash = git_service.clone_repo(repo_path=self.project_path, branch=self.git_info['branch'])
                 if not cloned:
                     Printer.error(f'Failed to clone {self.project_name}. Skipping...', bold=True)
                     return
+                
+                # Update the project information in the database
+                self.db_service.update_project(project_name=self.project_name,
+                                                head_commit=head_commit_hash,
+                                                num_total_commits=num_commits)
 
             # Step 2: Mine project changes
             Printer.info('Mining project changes...', bold=True)
@@ -46,7 +54,7 @@ class Pipeline:
                                     project_path=self.project_path, 
                                     project_branch=self.git_info['branch'],
                                     printer_indent=1)
-            pcm.mine(force=False)
+            num_mined_commits = pcm.mine(force=False)
 
             # Step 3: Mine benchmark presence
             Printer.separator()
@@ -55,7 +63,7 @@ class Pipeline:
                                         project_path=self.project_path,
                                         project_branch=self.git_info['branch'],
                                         printer_indent=1)
-            bpm.mine()
+            num_commits_with_benchmark = bpm.mine()
 
             # Step 4: Candidate commits
             Printer.separator()
@@ -65,6 +73,16 @@ class Pipeline:
                                 project_git_info=self.git_info,
                                 printer_indent=1)
             candidate_commits = cc.select()
+
+            # Save the candidate commits to the database
+            self.db_service.save_candidate_commits(project_name=self.project_name,
+                                                   candidate_commits=candidate_commits)
+            
+            # Update the project information in the database
+            self.db_service.update_project(project_name=self.project_name,
+                                           num_candidate_commits=len(candidate_commits),
+                                           num_commits_with_benchmark=num_commits_with_benchmark,
+                                           num_commits_with_changes=num_mined_commits)
         else:
             candidate_commits = FileUtils.read_json_file(candidate_commits_file_path)
 
@@ -89,9 +107,9 @@ class Pipeline:
             candidate_commit = candidate_commits[index]
 
             # Check if the commit has already been executed
-            performance_data_file_path = os.path.join('results', self.project_name, 'performance_data.json')
-            performance_data_file = FileUtils.read_json_file(performance_data_file_path)
-            if candidate_commit['commit'] in performance_data_file:
+            db_performance_data = self.db_service.get_performance_data(project_name=self.project_name,
+                                                                       commit_hash=candidate_commit['commit'])
+            if db_performance_data:
                 Printer.info(f'Commit {i + 1}/{N} already processed. Skipping...', bold=True, num_indentations=1)
                 Printer.separator(num_indentations=1)
                 i += 1
@@ -125,6 +143,12 @@ class Pipeline:
                 # Save the performance data file
                 FileUtils.write_json_file(performance_data_file_path, performance_data_file)
 
+            # Save the performance data to the database
+            self.db_service.save_performance_data(project_name=self.project_name,
+                                                commit_hash=candidate_commit['commit'],
+                                                status=executed,
+                                                performance_data=performance_data if performance_data else {})
+
             Printer.info(f'Commit {i + 1}/{N} processed. {sampled_count} out of {sample_size} required samples are available.', bold=True, num_indentations=1)
             Printer.info(f'Execution time: {time.time() - start_time}', bold=True, num_indentations=1)
             Printer.separator(num_indentations=1)
@@ -133,3 +157,8 @@ class Pipeline:
 
         if sampled_count < sample_size:
             Printer.warning(f'Only {sampled_count} suitable commits found out of requested {sample_size}')
+
+        # Update the project information in the database
+        self.db_service.update_project(project_name=self.project_name,
+                                       sample_size=sample_size,
+                                       sampled_count=sampled_count)

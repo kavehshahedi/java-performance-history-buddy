@@ -61,7 +61,7 @@ class BenchmarkPresenceMiner:
 
         return there_is_dependency, benchmark_directory, benchmark_name
 
-    def mine(self) -> None:
+    def mine(self) -> int:
         repo = Repo(self.project_path)
         commits = list(repo.iter_commits(self.project_branch))
 
@@ -79,3 +79,5 @@ class BenchmarkPresenceMiner:
                 counter += 1
 
         Printer.success(f'Project {self.project_name} has {counter} commits out of {len(commits)} that contain a dependency to JMH', num_indentations=self.printer_indent)
+
+        return counter

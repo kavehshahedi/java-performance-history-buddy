@@ -30,10 +30,11 @@ class ProjectChangeMiner:
             for info in extra_info:
                 f.write(f'{info}\n')
 
-    def mine(self, force: bool = False, custom_commits: Optional[list[str]] = None) -> None:
+    def mine(self, force: bool = False, custom_commits: Optional[list[str]] = None) -> int:
         repo = Repo(self.project_path)
 
         # Iterate over all commits
+        num_successful_commits = 0
         for commit in repo.iter_commits(self.project_branch):
             # Check if there are custom commits to process
             if custom_commits and commit.hexsha not in custom_commits:
@@ -184,4 +185,8 @@ class ProjectChangeMiner:
                 }
                 FileUtils.write_json_file(os.path.join(commit_folder, 'commit_details.json'), commit_info)
 
+                num_successful_commits += 1
+
             Printer.success(f'Commit {commit.hexsha} processed successfully', num_indentations=self.printer_indent)
+
+        return num_successful_commits
