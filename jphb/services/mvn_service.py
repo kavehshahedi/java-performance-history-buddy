@@ -1,6 +1,5 @@
 import subprocess
 import os
-import bisect
 from typing import Optional
 
 JAVA_HOME_PATHS = {
@@ -9,6 +8,8 @@ JAVA_HOME_PATHS = {
     '17': '/usr/lib/jvm/java-17-openjdk-amd64',
     '21': '/usr/lib/jvm/java-21-openjdk-amd64'
 }
+
+MAX_NUM_RETRIES = 2
 
 class MvnService:
     def __init__(self) -> None:
@@ -69,6 +70,7 @@ class MvnService:
                           is_shell: bool,
                           retry_with_other_java_versions: bool,
                           timeout: int) -> tuple[bool, str]:
+        retries = 0
         while True:
             env = MvnService.update_java_home(java_version)
 
@@ -77,7 +79,7 @@ class MvnService:
             if process.returncode == 0:
                 return True, java_version
 
-            if not retry_with_other_java_versions:
+            if not retry_with_other_java_versions or retries >= MAX_NUM_RETRIES:
                 return False, java_version
 
             # Find the next higher Java version
@@ -88,6 +90,8 @@ class MvnService:
                 return False, java_version
 
             java_version = next_version
+
+            retries += 1
     
     @staticmethod
     def update_java_home(java_version: str) -> dict:

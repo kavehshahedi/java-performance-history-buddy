@@ -37,13 +37,7 @@
         },
         "name": "SimpleFlatMapper",
         "path": "SimpleFlatMapper",
-        "target_package": "org.simpleflatmapper",
-        "custom_commands": {
-            "benchmark": {
-                "command": "mvn -pl sfm-jmh -am -Dmaven.test.skip.exec=true -DskipTests -Dlicense.skip=true",
-                "cwd": ""
-            }
-        }
+        "target_package": "org.simpleflatmapper"
     },
     {
         "git": {
@@ -90,16 +84,6 @@
                 "cwd": "testsuites/benchmark"
             }
         }
-    },
-    {
-        "git": {
-            "owner": "eclipse",
-            "repo": "vert.x",
-            "branch": "master"
-        },
-        "name": "vertx",
-        "path": "vertx",
-        "target_package": "io.vertx"
     },
     {
         "git":{

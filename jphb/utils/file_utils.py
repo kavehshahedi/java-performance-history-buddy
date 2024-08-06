@@ -2,6 +2,7 @@ import os
 import hashlib
 import json
 from typing import Union
+import shutil
 
 class FileUtils:
     @staticmethod
@@ -37,8 +38,8 @@ class FileUtils:
     @staticmethod
     def remove_path(path: str):
         if os.path.isdir(path):
-            os.rmdir(path)
-        else:
+            shutil.rmtree(path, ignore_errors=True)
+        elif os.path.isfile(path):
             os.remove(path)
 
     @staticmethod
@@ -47,11 +48,8 @@ class FileUtils:
             os.makedirs(directory_path, exist_ok=True)
 
         if remove_contents:
-            for root, dirs, files in os.walk(directory_path):
-                for file in files:
-                    os.remove(os.path.join(root, file))
-                for dir in dirs:
-                    os.rmdir(os.path.join(root, dir))
+            shutil.rmtree(directory_path, ignore_errors=True)
+            os.makedirs(directory_path, exist_ok=True)
     
     @staticmethod
     def read_json_file(file_path: str, create_if_not_exists: bool = True) -> dict:

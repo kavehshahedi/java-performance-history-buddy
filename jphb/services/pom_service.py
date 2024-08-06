@@ -40,8 +40,10 @@ class PomService:
             if start_index != -1 and end_index != -1:
                 prop_name = value[start_index+2:end_index]
                 if self.properties is not None:
-                    prop_value = self.properties.get(prop_name, value[start_index:end_index+1])
-                    value = value[:start_index] + prop_value + value[end_index+1:]
+                    prop_value = self.properties.find(f"mvn:{prop_name}", self.namespace)
+                    if prop_value is not None:
+                        prop_value = self.__resolve_property(str(prop_value.text))
+                        value = value[:start_index] + prop_value + value[end_index+1:]
             else:
                 break
         return value

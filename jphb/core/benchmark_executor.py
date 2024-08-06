@@ -1,6 +1,6 @@
 from types import NoneType
 from typing import Optional, Tuple, Union
-from git import Commit, Repo
+from git import Repo
 import os
 import shutil
 import subprocess
@@ -9,9 +9,9 @@ import sys
 
 from jphb.services.yaml_service import YamlCreator
 
-from jphb.services.git_service import GitService
 from jphb.services.pom_service import PomService
 from jphb.services.mvn_service import MvnService
+from jphb.services.lttng_service import LTTngService
 
 from jphb.utils.file_utils import FileUtils
 from jphb.utils.printer import Printer
@@ -29,6 +29,8 @@ class BenchmarkExecutor:
         self.printer_indent = kwargs.get('printer_indent', 0)
 
         self.jib_path = os.path.join(sys.path[0], 'jphb', 'resources', 'jib.jar')
+
+        self.use_lttng = kwargs.get('use_lttng', False)
 
     def __replace_benchmarks(self, from_commit_hash: str, to_commit_hash: str, benchmark_directory: str) -> None:
         self.repo.git.checkout(from_commit_hash, force=True)
@@ -100,10 +102,9 @@ class BenchmarkExecutor:
 
             # Check whether the project is buildable
             Printer.info(f'Checking if project is buildable...', num_indentations=self.printer_indent+1)
-            is_project_buildable = self.__build_project(project_path=self.project_path,
-                                                       build_anyway=(commit_hash == current_commit_hash),
-                                                       java_version=self.java_version,
-                                                       commit_hash=commit_hash)
+            is_project_buildable = self.__build_project(build_anyway=(commit_hash == current_commit_hash),
+                                                        java_version=self.java_version,
+                                                        commit_hash=commit_hash)
             if not is_project_buildable:
                 Printer.error(f'Project is not buildable', num_indentations=self.printer_indent+2)
                 return False, None
@@ -112,12 +113,11 @@ class BenchmarkExecutor:
             
             # Check whether the benchmarks are buildable
             Printer.info(f'Checking if benchmarks are buildable...', num_indentations=self.printer_indent+1)
-            is_benchmark_buildable = self.__build_benchmarks(project_path=self.project_path,
-                                                           benchmark_directory=project_benchmark_directory,
-                                                           benchmark_commit_hash=commit_hash,
-                                                           build_anyway=(commit_hash == current_commit_hash),
-                                                           java_version=self.java_version,
-                                                           custom_command = custom_commands['benchmark'] if custom_commands and 'benchmark' in custom_commands else None)
+            is_benchmark_buildable = self.__build_benchmarks(benchmark_directory=project_benchmark_directory,
+                                                             benchmark_commit_hash=commit_hash,
+                                                             build_anyway=(commit_hash == current_commit_hash),
+                                                             java_version=self.java_version,
+                                                             custom_command = custom_commands['benchmark'] if custom_commands and 'benchmark' in custom_commands else None)
             
             if not is_benchmark_buildable:
                 Printer.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
@@ -125,8 +125,8 @@ class BenchmarkExecutor:
                     is_current_benchmark_built = False
                 else:
                     is_previous_benchmark_built = False
-
-            Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
+            else:
+                Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
 
             # Check the hash of the benchmarks folder
             if commit_hash == current_commit_hash:
@@ -157,12 +157,11 @@ class BenchmarkExecutor:
             self.__replace_benchmarks(from_commit_hash=commit_to_use_for_benchmark,
                                       to_commit_hash=current_commit_hash,
                                       benchmark_directory=project_benchmark_directory)
-            status = self.__build_benchmarks(project_path=self.project_path,
-                                    benchmark_directory=project_benchmark_directory,
-                                    benchmark_commit_hash=current_commit_hash,
-                                    build_anyway=True, # Since we need to run the benchmarks, we build them anyway
-                                    java_version=self.java_version,
-                                    custom_command = custom_commands['benchmark'] if custom_commands and 'benchmark' in custom_commands else None)
+            status = self.__build_benchmarks(benchmark_directory=project_benchmark_directory,
+                                             benchmark_commit_hash=current_commit_hash,
+                                             build_anyway=True, # Since we need to run the benchmarks, we build them anyway
+                                             java_version=self.java_version,
+                                             custom_command = custom_commands['benchmark'] if custom_commands and 'benchmark' in custom_commands else None)
             
             if not status:
                 Printer.error(f'Benchmarks are not compatible with the other commit', num_indentations=self.printer_indent+1)
@@ -183,8 +182,7 @@ class BenchmarkExecutor:
             Printer.warning(f'Benchmark has not previously executed', num_indentations=self.printer_indent+2)
 
         Printer.info('Getting list of benchmarks...', num_indentations=self.printer_indent)
-        benchmark_jar_path, list_of_benchmarks = self.__get_list_of_benchmarks(project_path=self.project_path,
-                                                                               benchmark_directory=project_benchmark_directory,
+        benchmark_jar_path, list_of_benchmarks = self.__get_list_of_benchmarks(benchmark_directory=project_benchmark_directory,
                                                                                benchmark_name=project_benchmark_name,
                                                                                java_version=self.java_version)
         if not list_of_benchmarks:
@@ -196,8 +194,7 @@ class BenchmarkExecutor:
         target_methods = []
         if not has_benchmark_executed:
             for i, benchmark_name in enumerate(list_of_benchmarks):
-                tm = self.__get_target_methods(project_path=self.project_path,
-                                               project_package=target_package,
+                tm = self.__get_target_methods(project_package=target_package,
                                                java_version=self.java_version,
                                                commit_hash=commit.hexsha,
                                                benchmark_jar_path=benchmark_jar_path,
@@ -213,8 +210,7 @@ class BenchmarkExecutor:
                     'methods': tm
                 })
 
-            self.__save_benchmark_history(project_name=self.project_name,
-                                          target_methods=target_methods,
+            self.__save_benchmark_history(target_methods=target_methods,
                                           benchmark_hash=hash_to_check)
         else:
             Printer.success(f'Got the target methods from the history', num_indentations=self.printer_indent+1)
@@ -253,10 +249,12 @@ class BenchmarkExecutor:
 
                 # Create the YAML file
                 YamlCreator().create_yaml(
-                    log_file=os.path.join(config_directory, f'{benchmark}.log'),
+                    log_file=os.path.join(config_directory, 'ust', f'{benchmark}.log'),
                     target_package=target_package,
                     instrument=methods,
                     ignore=[],
+                    instrument_main_method=True,
+                    add_timestamp_to_file_names=True,
                     yaml_file=os.path.join(config_directory, f'{benchmark}.yaml')
                 )
 
@@ -278,22 +276,19 @@ class BenchmarkExecutor:
                                                 to_commit_hash=commit_hash_,
                                                 benchmark_directory=project_benchmark_directory)
                     
-                self.__build_project(project_path=self.project_path,
-                                            commit_hash=commit_hash_,
-                                            build_anyway=True, # Since we need to run the benchmarks, we build them anyway
-                                            java_version=self.java_version)
-                self.__build_benchmarks(project_path=self.project_path,
-                                        benchmark_directory=project_benchmark_directory,
+                self.__build_project(commit_hash=commit_hash_,
+                                     build_anyway=True, # Since we need to run the benchmarks, we build them anyway
+                                     java_version=self.java_version)
+                self.__build_benchmarks(benchmark_directory=project_benchmark_directory,
                                         benchmark_commit_hash=commit_hash_,
                                         build_anyway=True, # Since we need to run the benchmarks, we build them anyway
                                         java_version=self.java_version,
                                         custom_command = custom_commands['benchmark'] if custom_commands and 'benchmark' in custom_commands else None)
 
             Printer.info('Running benchmarks...', num_indentations=self.printer_indent+1)
-            performance_data = self.__run_benchmark_and_get_performance_data(project_path=self.project_path,
-                                                                            benchmark_jar_path=benchmark_jar_path,
-                                                                            config_directory=config_directory,
-                                                                            java_version=self.java_version)
+            performance_data = self.__run_benchmark_and_get_performance_data(benchmark_jar_path=benchmark_jar_path,
+                                                                             config_directory=config_directory,
+                                                                             java_version=self.java_version)
             if not performance_data:
                 Printer.error(f'Error while running benchmarks for getting performance data', num_indentations=self.printer_indent+2)
                 return False, None
@@ -308,7 +303,9 @@ class BenchmarkExecutor:
 
         return True, performance_results
 
-    def __build_project(self, project_path: str, commit_hash: str, java_version:str = '11', build_anyway = False) -> bool:        
+    def __build_project(self, commit_hash: str,
+                        java_version:str = '11',
+                        build_anyway = False) -> bool:        
         # Check if in the history, the build is successful
         history_path = os.path.join('results', self.project_name, 'build_history.json')
         build_history = FileUtils.read_json_file(history_path)
@@ -318,7 +315,7 @@ class BenchmarkExecutor:
 
         Printer.info(f'Building the project locally with Java {self.java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
-        status, jv = mvn_service.install(cwd=project_path,
+        status, jv = mvn_service.install(cwd=self.project_path,
                                          java_version=java_version,
                                          verbose=False,
                                          retry_with_other_java_versions=True)
@@ -335,8 +332,7 @@ class BenchmarkExecutor:
 
         return status
 
-    def __build_benchmarks(self, project_path: str, # The path to the project
-                           benchmark_directory: str, # The directory where the benchmarks are located
+    def __build_benchmarks(self, benchmark_directory: str, # The directory where the benchmarks are located
                            benchmark_commit_hash: str, # The commit SHA of the benchmark. In this pipeline, we use the previous release commit sha
                            build_anyway:bool = False, # If True, the build will be done regardless of the history
                            java_version: str = '11', # The Java version to be used for building the benchmarks
@@ -351,10 +347,10 @@ class BenchmarkExecutor:
         
         # Basically, the baseline command has been indicated in MvnService class. If there is a custom command, it will be used.
         command = None
-        cwd = os.path.join(project_path, benchmark_directory)
+        cwd = os.path.join(self.project_path, benchmark_directory)
         if custom_command:
             command = custom_command['command'].split()
-            cwd = os.path.join(project_path, custom_command['cwd'])
+            cwd = os.path.join(self.project_path, custom_command['cwd'])
 
         # Build the benchmarks (i.e., package)
         Printer.info(f'Building the benchmarks locally with Java {java_version}', num_indentations=self.printer_indent+2)
@@ -376,13 +372,12 @@ class BenchmarkExecutor:
 
         return status
 
-    def __get_list_of_benchmarks(self, project_path: str,
-                                 benchmark_directory: str,
+    def __get_list_of_benchmarks(self, benchmark_directory: str,
                                  benchmark_name: str,
                                  java_version:str) -> Tuple[str, list[str]]:        
         benchmark_jar_path = None
-        if benchmark_name == '' or not os.path.exists(os.path.join(project_path, benchmark_directory, 'target', f'{benchmark_name}')):
-            for root, _, files in os.walk(os.path.join(project_path, benchmark_directory)):
+        if benchmark_name == '' or not os.path.exists(os.path.join(self.project_path, benchmark_directory, 'target', f'{benchmark_name}')):
+            for root, _, files in os.walk(os.path.join(self.project_path, benchmark_directory)):
                 for file in files:
                     if file.endswith('.jar'):
                         if any(substring in file.lower() for substring in ('shade', 'original', 'source', 'sources', 'javadoc', 'tests', 'test', 'snapshot')):
@@ -391,7 +386,7 @@ class BenchmarkExecutor:
                         break
 
         else:
-            benchmark_jar_path = os.path.join(project_path, benchmark_directory, 'target', f'{benchmark_name}')
+            benchmark_jar_path = os.path.join(self.project_path, benchmark_directory, 'target', f'{benchmark_name}')
 
         if not benchmark_jar_path:
             return '', []
@@ -425,8 +420,7 @@ class BenchmarkExecutor:
         except:
             return '', []
     
-    def __has_benchmark_previously_executed(self,
-                                            hash_to_check: str) -> Tuple[bool, list]:
+    def __has_benchmark_previously_executed(self, hash_to_check: str) -> Tuple[bool, list]:
         history_path = os.path.join('results', self.project_name, 'benchmark_history.json')
         history = FileUtils.read_json_file(history_path)
 
@@ -435,14 +429,14 @@ class BenchmarkExecutor:
 
         return False, []
 
-    def __save_benchmark_history(self, project_name, target_methods: list[dict], benchmark_hash: str) -> None:
-        history_path = os.path.join('results', project_name, 'benchmark_history.json')
+    def __save_benchmark_history(self, target_methods: list[dict],
+                                 benchmark_hash: str) -> None:
+        history_path = os.path.join('results', self.project_name, 'benchmark_history.json')
         history = FileUtils.read_json_file(history_path)
         history[benchmark_hash] = target_methods
         FileUtils.write_json_file(history_path, history)
 
-    def __get_target_methods(self,project_path: str,
-                             project_package: str,
+    def __get_target_methods(self, project_package: str,
                              java_version: str,
                              commit_hash: str,
                              benchmark_jar_path: str,
@@ -496,8 +490,7 @@ class BenchmarkExecutor:
 
         return list(target_methods)
 
-    def __is_benchmark_targeting_changed_methods(self,
-                                                 changed_methods: dict[str, list[str]], # The list of changed methods in the commit
+    def __is_benchmark_targeting_changed_methods(self, changed_methods: dict[str, list[str]], # The list of changed methods in the commit
                                                  target_methods: list[str] # The list of methods that the benchmark executes
                                                  ) -> Tuple[bool, dict[str, list[str]]]:
         # Preprocess the target functions once and store the results in a set
@@ -551,9 +544,7 @@ class BenchmarkExecutor:
 
         return selected_benchmarks
 
-
-    def __run_benchmark_and_get_performance_data(self, project_path: str,
-                                                 benchmark_jar_path: str,
+    def __run_benchmark_and_get_performance_data(self, benchmark_jar_path: str,
                                                  config_directory: str,
                                                  java_version: str) -> Union[NoneType, dict]:
         # Open all of the config files
@@ -565,9 +556,15 @@ class BenchmarkExecutor:
             config_path = os.path.join(config_directory, config)
 
             # Remove the previous log file (if exists)
-            log_path = os.path.join(config_directory, f'{benchmark_name}.log')
+            log_path = os.path.join(config_directory, 'ust', f'{benchmark_name}.log')
             if os.path.exists(log_path):
                 os.remove(log_path)
+
+            # Check if we need to use LTTng
+            if self.use_lttng:
+                lttng_service = LTTngService(project_name=self.project_name,
+                                             output_path=config_directory)
+                lttng_service.start()
 
             # Run the benchmark
             mvn_service = MvnService()
@@ -578,11 +575,15 @@ class BenchmarkExecutor:
                 f'-javaagent:{self.jib_path}=config={config_path}',
                 '-jar',
                 benchmark_jar_path,
-                '-f', '5',
+                '-f', '3',
                 '-wi', '0',
                 '-i', '5',
                 benchmark_name
             ], capture_output=True, shell=False, env=env)
+
+            # Stop the LTTng tracing (if enabled)
+            if self.use_lttng:
+                lttng_service.stop()
 
             if process.returncode != 0:
                 return None

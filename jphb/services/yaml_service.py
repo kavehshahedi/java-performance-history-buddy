@@ -6,9 +6,10 @@ from typing import Optional, List
 
 class Configuration:
     class Logging:
-        def __init__(self, level: Optional[str] = None, file: Optional[str] = None):
+        def __init__(self, level: Optional[str] = None, file: Optional[str] = None, add_timestamp_to_file_names: bool = False):
             self.level = level
             self.file = file
+            self.add_timestamp_to_file_names = add_timestamp_to_file_names
 
     class TargetMethods:
         def __init__(self, instrument: Optional[List[str]] = None, ignore: Optional[List[str]] = None):
@@ -20,10 +21,11 @@ class Configuration:
         self.instrumentation = instrumentation
 
     class Instrumentation:
-        def __init__(self, target_package: Optional[str] = None, target_methods: Optional['Configuration.TargetMethods'] = None, only_visisted: bool = False):
+        def __init__(self, target_package: Optional[str] = None, target_methods: Optional['Configuration.TargetMethods'] = None, only_visisted: bool = False, instrument_main_method: bool = False):
             self.target_package = target_package
             self.target_methods = target_methods
             self.only_visisted = only_visisted
+            self.instrument_main_method = instrument_main_method
 
 
 class YamlCreator:
@@ -41,13 +43,15 @@ class YamlCreator:
         return dumper.represent_dict({
             'level': data.level,
             'file': data.file,
+            'addTimestampToFileNames': data.add_timestamp_to_file_names
         })
 
     def instrumentation_representer(self, dumper, data):
         return dumper.represent_dict({
             'targetPackage': data.target_package,
             'targetMethods': data.target_methods,
-            'onlyCheckVisited': data.only_visisted
+            'onlyCheckVisited': data.only_visisted,
+            'instrumentMainMethod': data.instrument_main_method
         })
 
     def target_methods_representer(self, dumper, data):
@@ -56,7 +60,15 @@ class YamlCreator:
             'ignore': data.ignore,
         })
 
-    def create_yaml(self, log_file: str, target_package: str, instrument: List[str], ignore: List[str], yaml_file: str, only_visited=False):
+    def create_yaml(self,
+                    log_file: str,
+                    target_package: str,
+                    instrument: List[str],
+                    ignore: List[str],
+                    yaml_file: str,
+                    add_timestamp_to_file_names: bool = False,
+                    only_visited: bool = False,
+                    instrument_main_method: bool = False):
         yaml = YAML()
 
         yaml.representer.add_representer(Configuration, self.config_representer)
@@ -72,14 +84,15 @@ class YamlCreator:
 
         # Create and populate Configuration instance
         config = Configuration(
-            logging=Configuration.Logging(level='fine', file=log_file),
+            logging=Configuration.Logging(level='fine', file=log_file, add_timestamp_to_file_names=add_timestamp_to_file_names),
             instrumentation=Configuration.Instrumentation(
                 target_package=target_package,
                 target_methods=Configuration.TargetMethods(
                     instrument=instrument,
                     ignore=ignore
                 ),
-                only_visisted=only_visited
+                only_visisted=only_visited,
+                instrument_main_method=instrument_main_method
             )
         )
 

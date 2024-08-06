@@ -1,5 +1,6 @@
 /venv/
 /results/
+/projects/
 
 **/__pycache__/
 **/.vscode/

@@ -15,7 +15,7 @@ from jphb.utils.file_utils import FileUtils
 
 class Pipeline:
 
-    def __init__(self, project: dict, base_project_path: str) -> None:
+    def __init__(self, project: dict, base_project_path: str, use_lttng: bool = False) -> None:
         self.project_name = project['name']
         self.project_path = os.path.join(base_project_path, self.project_name)
         self.target_package = project['target_package']
@@ -25,6 +25,7 @@ class Pipeline:
             'branch': project['git']['branch']
         }
         self.custom_commands = project.get('custom_commands', None)
+        self.use_lttng = use_lttng
 
     def run(self) -> None:
         # First we check if the candidate commits have already been selected
@@ -92,6 +93,7 @@ class Pipeline:
             performance_data_file = FileUtils.read_json_file(performance_data_file_path)
             if candidate_commit['commit'] in performance_data_file:
                 Printer.info(f'Commit {i + 1}/{N} already processed. Skipping...', bold=True, num_indentations=1)
+                Printer.separator(num_indentations=1)
                 i += 1
                 sampled_count += 1
                 continue
@@ -99,7 +101,8 @@ class Pipeline:
             # Execute the benchmark
             executor = BenchmarkExecutor(project_name=self.project_name,
                                          project_path=self.project_path,
-                                         printer_indent=1)
+                                         printer_indent=1,
+                                         use_lttng=self.use_lttng)
             executed, performance_data = executor.execute(jmh_dependency=candidate_commit['jmh_dependency'],
                                                         current_commit_hash=candidate_commit['commit'],
                                                         previous_commit_hash=candidate_commit['previous_commit'],

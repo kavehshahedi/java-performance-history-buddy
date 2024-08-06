@@ -14,16 +14,20 @@ class RefactoringMinerService:
     def mine(self, commit_hash: str) -> list[dict]:
         output_file = tempfile.NamedTemporaryFile(delete=True).name
 
-        mvn_service = MvnService()
-        env = mvn_service.update_java_home('17')
-        subprocess.run(['./RefactoringMiner',
-                        '-c',
-                        self.project_path,
-                        commit_hash,
-                        '-json', output_file],
-                        cwd=os.path.join(sys.path[0], 'jphb', 'resources', 'refactoring-miner', 'bin'),
-                        capture_output=True,
-                        env=env)
+        try:
+            mvn_service = MvnService()
+            env = mvn_service.update_java_home('17')
+            subprocess.run(['./RefactoringMiner',
+                            '-c',
+                            self.project_path,
+                            commit_hash,
+                            '-json', output_file],
+                            cwd=os.path.join(sys.path[0], 'jphb', 'resources', 'refactoring-miner', 'bin'),
+                            capture_output=True,
+                            env=env,
+                            timeout=60)
+        except subprocess.TimeoutExpired:
+            return []
         
         result = self.__read(output_file)
         for commit in result['commits']:

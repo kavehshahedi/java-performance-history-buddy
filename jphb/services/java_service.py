@@ -1,3 +1,4 @@
+from typing import Union
 import javalang
 import javalang.ast
 import javalang.tree
@@ -20,20 +21,27 @@ class JavaService:
     def __init__(self) -> None:
         pass
 
-    def __get_ast(self, code: str) -> javalang.tree.CompilationUnit:
+    def __get_ast(self, code: str) -> Union[javalang.tree.CompilationUnit, None]:
         """
         We use the javalang library to parse the Java code and get the AST.
         """
 
-        return javalang.parse.parse(code)
+        try:
+            tree = javalang.parse.parse(code)
+            return tree
+        except javalang.parser.JavaSyntaxError:
+            return None
     
-    def get_different_methods(self, first_code: str, second_code: str) -> list[dict]:
+    def get_different_methods(self, first_code: str, second_code: str) -> Union[list[dict], None]:
         """
         This method gets two Java code snippets and returns the methods that are different between them.
         """
 
         first_code_hashes = self.get_method_hashes(first_code) # i.e., the new commit's code
         second_code_hashes = self.get_method_hashes(second_code) # i.e., the old commit's code
+
+        if first_code_hashes is None or second_code_hashes is None:
+            return None
 
         different_methods = []
         for method_name, _ in first_code_hashes.items():
@@ -46,7 +54,7 @@ class JavaService:
 
         return different_methods
     
-    def convert_method_signature(self, code: str) -> str:
+    def convert_method_signature(self, code: str) -> Union[str, None]:
         """
         Given a full method signature, this method converts it to a short method signature.
 
@@ -60,6 +68,8 @@ class JavaService:
         code = code.replace(full_method_name, short_method_name)
         wrapped_code = f'public class A {{ {code} {{}} }}'
         tree = self.__get_ast(wrapped_code)
+        if tree is None:
+            return None
         
         method_signature = ''
         for _, node in tree:
@@ -69,7 +79,7 @@ class JavaService:
             
         return method_signature
     
-    def get_method_hashes(self, code: str) -> dict:
+    def get_method_hashes(self, code: str) -> Union[dict, None]:
         """
         Here, we get the method hashes for the given Java code.
         The method hashes are calculated based on the method's signature and body.
@@ -84,6 +94,9 @@ class JavaService:
         code = srcml_service.remove_comments(code)
         
         tree = self.__get_ast(code)
+        if tree is None:
+            return None
+
         method_hashes = {}
         
         for _, node in tree:

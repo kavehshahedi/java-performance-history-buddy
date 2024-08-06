@@ -132,6 +132,10 @@ class ProjectChangeMiner:
 
                 java_service = JavaService()
                 different_methods = java_service.get_different_methods(new_file, old_file)
+                if different_methods is None:
+                    self.__write_error(commit_folder, 'get_different_methods', commit.hexsha, previous_commit.hexsha, [])
+                    Printer.error(f'Error in commit {commit.hexsha}', num_indentations=self.printer_indent)
+                    continue
                 
                 # NOTE: Temporary
                 # Remove the methods that 'second' is null
@@ -143,6 +147,8 @@ class ProjectChangeMiner:
 
                     for method_ in file_methods:
                         converted_method_name = java_service.convert_method_signature(method_)
+                        if converted_method_name is None:
+                            continue
 
                         for diff_method in different_methods:
                             if diff_key == 'first' and diff_method['first'] == converted_method_name: # type: ignore
