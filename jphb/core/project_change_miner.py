@@ -7,6 +7,7 @@ from jphb.core.benchmark_presence_miner import BenchmarkPresenceMiner
 from jphb.services.refactoring_miner_service import RefactoringMinerService
 from jphb.services.java_service import JavaService
 from jphb.services.srcml_service import SrcMLService
+from jphb.services.llm_service import LLMService
 
 from jphb.utils.file_utils import FileUtils
 from jphb.utils.printer import Printer
@@ -14,10 +15,13 @@ from jphb.utils.printer import Printer
 
 class ProjectChangeMiner:
 
-    def __init__(self, project_name: str, project_path: str, project_branch: str, **kwargs) -> None:
+    def __init__(self, project_name: str, project_path: str, project_branch: str, use_llm: bool = False, **kwargs) -> None:
         self.project_name = project_name
         self.project_path = project_path
         self.project_branch = project_branch
+        self.use_llm = use_llm
+        if use_llm:
+            self.llm_service = LLMService()
 
         self.printer_indent = kwargs.get('printer_indent', 0)
 
@@ -131,6 +135,11 @@ class ProjectChangeMiner:
                     old_file_name = file
                 old_file = repo.git.show(f'{previous_commit.hexsha}:{old_file_name}')
 
+                # Remove the comments from the files (since we are comparing the methods)
+                srcml_service = SrcMLService()
+                new_file = srcml_service.remove_comments(new_file)
+                old_file = srcml_service.remove_comments(old_file)
+
                 java_service = JavaService()
                 different_methods = java_service.get_different_methods(new_file, old_file)
                 if different_methods is None:
@@ -139,12 +148,54 @@ class ProjectChangeMiner:
                     continue
                 
                 # NOTE: Temporary
-                # Remove the methods that 'second' is null
+                # Remove the methods that 'second' is null (i.e., the methods that are newly introduced in the new commit)
                 different_methods = [diff for diff in different_methods if diff['second']]
+                if len(different_methods) == 0:
+                    continue
 
                 srcml_service = SrcMLService()
+
+                # If we are using LLM, we need to check if the code change is significant
+                if self.use_llm:
+                    new_file_methods = srcml_service.get_methods(new_file, with_body=True)
+                    old_file_methods = srcml_service.get_methods(old_file, with_body=True)
+                    
+                    # Iterate over the different methods and check if the code change is significant
+                    # If not, we remove the method from the list
+                    indexes_to_remove = []
+                    for i, diff in enumerate(different_methods):
+                        new_method = None
+                        old_method = None
+
+                        # We need to find the method in the new and old files
+                        for method_ in new_file_methods:
+                            method_name = java_service.convert_method_signature(method_.split('{')[0])
+                            if method_name == diff['first']:
+                                new_method = method_
+                                break
+
+                        for method_ in old_file_methods:
+                            method_name = java_service.convert_method_signature(method_.split('{')[0])
+                            if method_name == diff['second']:
+                                old_method = method_
+                                break
+
+                        # Check if the method is not found
+                        if new_method is None or old_method is None:
+                            print('ERROR')
+                            continue
+                        
+                        # Check if the code change is significant
+                        is_significant = self.llm_service.is_code_change_significant(new_method, old_method, wrap_codes=False)
+                        if not is_significant:
+                            indexes_to_remove.append(i)
+
+                    # Remove the methods that are not significant
+                    different_methods = [diff for i, diff in enumerate(different_methods) if i not in indexes_to_remove]
+
                 for file_, commit_, diff_key in [(file, commit, 'first'), (old_file_name, previous_commit, 'second')]:
-                    file_methods = srcml_service.get_methods(repo.git.show(f'{commit_.hexsha}:{file_}'))
+                    file_methods = srcml_service.get_methods(repo.git.show(f'{commit_.hexsha}:{file_}'),
+                                                             remove_comments=True)
 
                     for method_ in file_methods:
                         converted_method_name = java_service.convert_method_signature(method_)

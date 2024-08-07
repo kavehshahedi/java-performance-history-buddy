@@ -21,12 +21,19 @@ class SrcMLService:
     def __init__(self) -> None:
         self.namespace = {'src': 'http://www.srcML.org/srcML/src'}
     
-    def get_methods(self, code: str) -> list[str]:
+    def get_methods(self, code: str, with_body: bool = False, remove_comments: bool = False) -> list[str]:
         """
         This method returns the methods in the given code.
         Each method is represented as a string in the format of:
             <return type> <package name><class name>.<method name>(<parameters>)
+
+        If with_body is True, the method will return the methods with their bodies.
+            <return type> <package name><class name>.<method name>(<parameters>) { <method body> }
         """
+
+        # Remove the comments from the code
+        if remove_comments:
+            code = self.remove_comments(code)
 
         root = self.__get_xml(code)
         methods = []
@@ -43,7 +50,15 @@ class SrcMLService:
                 m_signature = method_name.split('(')[0]
                 m_signature = ' '.join(m_signature.split(' ')[0:-1])
 
-                methods.append(f'{m_signature} {class_name}.{m_name_only}')
+                if with_body:
+                    method_block = method.find('src:block', self.namespace)
+                    if method_block is None:
+                        continue
+                    method_body = ''.join(method_block.itertext()).strip()
+                    method_body = re.sub(' +', ' ', ''.join(method_body).strip().replace('\n', '').replace('\t', ''))
+                    methods.append(f'{m_signature} {class_name}.{m_name_only} {method_body}')
+                else:
+                    methods.append(f'{m_signature} {class_name}.{m_name_only}')
             except:
                 continue
 

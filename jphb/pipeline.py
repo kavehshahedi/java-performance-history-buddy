@@ -53,6 +53,7 @@ class Pipeline:
             pcm = ProjectChangeMiner(project_name=self.project_name, 
                                     project_path=self.project_path, 
                                     project_branch=self.git_info['branch'],
+                                    use_llm=True,
                                     printer_indent=1)
             num_mined_commits = pcm.mine(force=False)
 

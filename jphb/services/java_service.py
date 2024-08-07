@@ -4,8 +4,6 @@ import javalang.ast
 import javalang.tree
 import hashlib
 
-from jphb.services.srcml_service import SrcMLService
-
 
 class JavaService:
 
@@ -89,10 +87,6 @@ class JavaService:
             - Output: {'None-void-method-[int, int]': 'd41d8cd98f00b204e9800998ecf8427e'}
         """
 
-        # Remove the comments
-        srcml_service = SrcMLService()
-        code = srcml_service.remove_comments(code)
-        
         tree = self.__get_ast(code)
         if tree is None:
             return None
