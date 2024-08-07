@@ -16,7 +16,7 @@ from jphb.utils.file_utils import FileUtils
 
 class Pipeline:
 
-    def __init__(self, project: dict, base_project_path: str, use_lttng: bool = False) -> None:
+    def __init__(self, project: dict, base_project_path: str, use_lttng: bool = False, use_llm: bool = False) -> None:
         self.project_name = project['name']
         self.project_path = os.path.join(base_project_path, self.project_name)
         self.target_package = project['target_package']
@@ -27,6 +27,7 @@ class Pipeline:
         }
         self.custom_commands = project.get('custom_commands', None)
         self.use_lttng = use_lttng
+        self.use_llm = use_llm
 
         self.db_service = DBService()
 
@@ -53,7 +54,7 @@ class Pipeline:
             pcm = ProjectChangeMiner(project_name=self.project_name, 
                                     project_path=self.project_path, 
                                     project_branch=self.git_info['branch'],
-                                    use_llm=True,
+                                    use_llm=self.use_llm,
                                     printer_indent=1)
             num_mined_commits = pcm.mine(force=False)
 

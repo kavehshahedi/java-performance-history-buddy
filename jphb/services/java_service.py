@@ -3,6 +3,7 @@ import javalang
 import javalang.ast
 import javalang.tree
 import hashlib
+import re
 
 
 class JavaService:
@@ -77,6 +78,13 @@ class JavaService:
             
         return method_signature
     
+    def __normalize_literals(self, method_body: str) -> str:
+        pattern =  r'(Literal\([^)]*value=)(\".*?\"|\d+)([^)]*\))'
+
+        method_body = re.sub(pattern, r'\1' + '\"X\"' + r'\3', method_body)
+
+        return method_body
+    
     def get_method_hashes(self, code: str) -> Union[dict, None]:
         """
         Here, we get the method hashes for the given Java code.
@@ -96,7 +104,12 @@ class JavaService:
         for _, node in tree:
             if isinstance(node, javalang.tree.MethodDeclaration):
                 method_name = f'{node.type_parameters}-{node.return_type}-{node.name}-{node.parameters}' # type: ignore
+
                 method_body = ''.join(map(str, node.body)) if node.body else '' # type: ignore
+                method_body = self.__normalize_literals(method_body)
+                method_body = method_body.replace(' ', '').replace('\n', '').replace('\t', '')
+                method_body = method_body.lower().strip()
+
                 method_signature = f'{method_name}{method_body}'
                 method_hash = hashlib.md5(method_signature.encode()).hexdigest()
                 method_hashes[method_name] = method_hash

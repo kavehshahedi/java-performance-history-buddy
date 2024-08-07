@@ -40,6 +40,9 @@ class ProjectChangeMiner:
         # Iterate over all commits
         num_successful_commits = 0
         for commit in repo.iter_commits(self.project_branch):
+            # Keep track of the number of changed methods
+            num_changed_methods = 0
+
             # Check if there are custom commits to process
             if custom_commits and commit.hexsha not in custom_commits:
                 continue
@@ -182,7 +185,6 @@ class ProjectChangeMiner:
 
                         # Check if the method is not found
                         if new_method is None or old_method is None:
-                            print('ERROR')
                             continue
                         
                         # Check if the code change is significant
@@ -192,6 +194,8 @@ class ProjectChangeMiner:
 
                     # Remove the methods that are not significant
                     different_methods = [diff for i, diff in enumerate(different_methods) if i not in indexes_to_remove]
+
+                num_changed_methods += len(different_methods)
 
                 for file_, commit_, diff_key in [(file, commit, 'first'), (old_file_name, previous_commit, 'second')]:
                     file_methods = srcml_service.get_methods(repo.git.show(f'{commit_.hexsha}:{file_}'),
@@ -238,6 +242,6 @@ class ProjectChangeMiner:
 
                 num_successful_commits += 1
 
-            Printer.success(f'Commit {commit.hexsha} processed successfully', num_indentations=self.printer_indent)
+            Printer.success(f'Commit {commit.hexsha} processed successfully with {num_changed_methods} methods', num_indentations=self.printer_indent)
 
         return num_successful_commits
