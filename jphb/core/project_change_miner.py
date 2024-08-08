@@ -39,7 +39,8 @@ class ProjectChangeMiner:
 
         # Iterate over all commits
         num_successful_commits = 0
-        for commit in repo.iter_commits(self.project_branch):
+        total_commits = sum(1 for _ in repo.iter_commits(self.project_branch))
+        for commit_index, commit in enumerate(repo.iter_commits(self.project_branch), start=1):
             # Keep track of the number of changed methods
             num_changed_methods = 0
 
@@ -50,7 +51,7 @@ class ProjectChangeMiner:
             # Skip the commits if they are already processed and saved in the output folder
             commit_folder = os.path.join('results', self.project_name, 'commits', commit.hexsha)
             if os.path.exists(commit_folder) and not force:
-                Printer.success(f'Commit {commit.hexsha} already processed', num_indentations=self.printer_indent)
+                Printer.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} already processed', num_indentations=self.printer_indent)
                 continue
 
             # Create a folder for the commit if it does not exist
@@ -58,13 +59,13 @@ class ProjectChangeMiner:
 
             # Skip the merge commits
             if len(commit.parents) > 1:
-                Printer.warning(f'Skipping merge commit {commit.hexsha}', num_indentations=self.printer_indent)
+                Printer.warning(f'({commit_index}/{total_commits}) Skipping merge commit {commit.hexsha}', num_indentations=self.printer_indent)
                 continue
 
             # Check the file changes in the commit
             # If there is no file change in the commit on .java files, skip the commit
             if not commit.stats.files or not any(str(file).endswith('.java') for file in commit.stats.files):
-                Printer.warning(f'No .java file changes in commit {commit.hexsha}', num_indentations=self.printer_indent)
+                Printer.warning(f'({commit_index}/{total_commits}) No .java file changes in commit {commit.hexsha}', num_indentations=self.printer_indent)
                 continue
 
             try:
@@ -72,13 +73,13 @@ class ProjectChangeMiner:
                 repo.git.checkout(commit.hexsha, force=True)
             except:
                 self.__write_error(commit_folder, 'git checkout', commit.hexsha, 'None', [])
-                Printer.error(f'Error in commit {commit.hexsha}', num_indentations=self.printer_indent)
+                Printer.error(f'({commit_index}/{total_commits}) Error in commit {commit.hexsha}', num_indentations=self.printer_indent)
                 continue
 
             # Get the previous commit
             previous_commit = commit.parents[0] if commit.parents else None
             if not previous_commit:
-                Printer.error(f'No previous commit for commit {commit.hexsha}', num_indentations=self.printer_indent)
+                Printer.error(f'({commit_index}/{total_commits}) No previous commit for commit {commit.hexsha}', num_indentations=self.printer_indent)
                 continue
 
             # Get the changed .java files in the new commit
@@ -242,6 +243,6 @@ class ProjectChangeMiner:
 
                 num_successful_commits += 1
 
-            Printer.success(f'Commit {commit.hexsha} processed successfully with {num_changed_methods} methods', num_indentations=self.printer_indent)
+            Printer.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} processed successfully with {num_changed_methods} methods', num_indentations=self.printer_indent)
 
         return num_successful_commits
