@@ -28,7 +28,7 @@ class JavaService:
         try:
             tree = javalang.parse.parse(code)
             return tree
-        except javalang.parser.JavaSyntaxError:
+        except:
             return None
     
     def get_different_methods(self, first_code: str, second_code: str) -> Union[list[dict], None]:

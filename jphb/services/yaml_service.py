@@ -6,22 +6,31 @@ from typing import Optional, List
 
 class Configuration:
     class Logging:
-        def __init__(self, level: Optional[str] = None, file: Optional[str] = None, add_timestamp_to_file_names: bool = False):
+        def __init__(self, level: Optional[str] = None,
+                     file: Optional[str] = None,
+                     add_timestamp_to_file_names: bool = False,
+                     use_hash: bool = False):
             self.level = level
             self.file = file
             self.add_timestamp_to_file_names = add_timestamp_to_file_names
+            self.use_hash = use_hash
 
     class TargetMethods:
-        def __init__(self, instrument: Optional[List[str]] = None, ignore: Optional[List[str]] = None):
+        def __init__(self, instrument: Optional[List[str]] = None,
+                     ignore: Optional[List[str]] = None):
             self.instrument = instrument
             self.ignore = ignore
 
-    def __init__(self, logging: Optional['Configuration.Logging'] = None, instrumentation: Optional['Configuration.Instrumentation'] = None):
+    def __init__(self, logging: Optional['Configuration.Logging'] = None,
+                 instrumentation: Optional['Configuration.Instrumentation'] = None):
         self.logging = logging
         self.instrumentation = instrumentation
 
     class Instrumentation:
-        def __init__(self, target_package: Optional[str] = None, target_methods: Optional['Configuration.TargetMethods'] = None, only_visisted: bool = False, instrument_main_method: bool = False):
+        def __init__(self, target_package: Optional[str] = None,
+                     target_methods: Optional['Configuration.TargetMethods'] = None,
+                     only_visisted: bool = False,
+                     instrument_main_method: bool = False):
             self.target_package = target_package
             self.target_methods = target_methods
             self.only_visisted = only_visisted
@@ -43,7 +52,8 @@ class YamlCreator:
         return dumper.represent_dict({
             'level': data.level,
             'file': data.file,
-            'addTimestampToFileNames': data.add_timestamp_to_file_names
+            'addTimestampToFileNames': data.add_timestamp_to_file_names,
+            'useHash': data.use_hash
         })
 
     def instrumentation_representer(self, dumper, data):
@@ -68,7 +78,8 @@ class YamlCreator:
                     yaml_file: str,
                     add_timestamp_to_file_names: bool = False,
                     only_visited: bool = False,
-                    instrument_main_method: bool = False):
+                    instrument_main_method: bool = False,
+                    use_hash: bool = False):
         yaml = YAML()
 
         yaml.representer.add_representer(Configuration, self.config_representer)
@@ -84,7 +95,10 @@ class YamlCreator:
 
         # Create and populate Configuration instance
         config = Configuration(
-            logging=Configuration.Logging(level='fine', file=log_file, add_timestamp_to_file_names=add_timestamp_to_file_names),
+            logging=Configuration.Logging(level='fine',
+                                          file=log_file,
+                                          add_timestamp_to_file_names=add_timestamp_to_file_names,
+                                          use_hash=use_hash),
             instrumentation=Configuration.Instrumentation(
                 target_package=target_package,
                 target_methods=Configuration.TargetMethods(

@@ -51,6 +51,8 @@ class Pipeline:
                     Printer.error(f'Failed to clone {self.project_name}. Skipping...', bold=True)
                     return
                 
+                Printer.success(f'{self.project_name} cloned successfully.', bold=True)
+                
                 # Update the project information in the database
                 self.db_service.update_project(project_name=self.project_name,
                                                 head_commit=head_commit_hash,
@@ -63,7 +65,7 @@ class Pipeline:
                                     project_branch=self.git_info['branch'],
                                     use_llm=self.use_llm,
                                     printer_indent=1)
-            num_mined_commits = pcm.mine(force=False)
+            num_mined_commits = pcm.mine(force=False, max_commits=200)
 
             # Step 3: Mine benchmark presence
             Printer.separator()

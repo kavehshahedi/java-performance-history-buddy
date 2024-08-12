@@ -100,33 +100,34 @@ class BenchmarkExecutor:
                 pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
                 pom_service.set_java_version(self.java_version)
 
-            # Check whether the project is buildable
-            Printer.info(f'Checking if project is buildable...', num_indentations=self.printer_indent+1)
-            is_project_buildable = self.__build_project(build_anyway=(commit_hash == current_commit_hash),
-                                                        java_version=self.java_version,
-                                                        commit_hash=commit_hash)
-            if not is_project_buildable:
-                Printer.error(f'Project is not buildable', num_indentations=self.printer_indent+2)
-                return False, None
+            if not custom_commands:
+                # Check whether the project is buildable
+                Printer.info(f'Checking if project is buildable...', num_indentations=self.printer_indent+1)
+                is_project_buildable = self.__build_project(build_anyway=(commit_hash == current_commit_hash),
+                                                            java_version=self.java_version,
+                                                            commit_hash=commit_hash)
+                if not is_project_buildable:
+                    Printer.error(f'Project is not buildable', num_indentations=self.printer_indent+2)
+                    return False, None
 
-            Printer.success(f'Project is buildable', num_indentations=self.printer_indent+2)
-            
-            # Check whether the benchmarks are buildable
-            Printer.info(f'Checking if benchmarks are buildable...', num_indentations=self.printer_indent+1)
-            is_benchmark_buildable = self.__build_benchmarks(benchmark_directory=project_benchmark_directory,
-                                                             benchmark_commit_hash=commit_hash,
-                                                             build_anyway=(commit_hash == current_commit_hash),
-                                                             java_version=self.java_version,
-                                                             custom_command = custom_commands['benchmark'] if custom_commands and 'benchmark' in custom_commands else None)
-            
-            if not is_benchmark_buildable:
-                Printer.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
-                if commit_hash == current_commit_hash:
-                    is_current_benchmark_built = False
-                else:
-                    is_previous_benchmark_built = False
+                Printer.success(f'Project is buildable', num_indentations=self.printer_indent+2)
             else:
-                Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
+                # Check whether the benchmarks are buildable
+                Printer.info(f'Checking if benchmarks are buildable...', num_indentations=self.printer_indent+1)
+                is_benchmark_buildable = self.__build_benchmarks(benchmark_directory=project_benchmark_directory,
+                                                                benchmark_commit_hash=commit_hash,
+                                                                build_anyway=(commit_hash == current_commit_hash),
+                                                                java_version=self.java_version,
+                                                                custom_command = custom_commands['install'] if custom_commands and 'install' in custom_commands else None)
+            
+                if not is_benchmark_buildable:
+                    Printer.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
+                    if commit_hash == current_commit_hash:
+                        is_current_benchmark_built = False
+                    else:
+                        is_previous_benchmark_built = False
+                else:
+                    Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
 
             # Check the hash of the benchmarks folder
             if commit_hash == current_commit_hash:
@@ -255,6 +256,7 @@ class BenchmarkExecutor:
                     ignore=[],
                     instrument_main_method=True,
                     add_timestamp_to_file_names=True,
+                    use_hash=True,
                     yaml_file=os.path.join(config_directory, f'{benchmark}.yaml')
                 )
 
@@ -317,7 +319,7 @@ class BenchmarkExecutor:
         mvn_service = MvnService()
         status, jv = mvn_service.install(cwd=self.project_path,
                                          java_version=java_version,
-                                         verbose=False,
+                                         verbose=True,
                                          retry_with_other_java_versions=True)
 
         # Save the result
@@ -358,7 +360,7 @@ class BenchmarkExecutor:
         status, jv = mvn_service.package(cwd=cwd,
                                          custom_command=command,
                                          java_version=java_version,
-                                         verbose=False,
+                                         verbose=True,
                                          retry_with_other_java_versions=True)
 
         # Save the result
@@ -476,7 +478,11 @@ class BenchmarkExecutor:
             '-r', '1s',
             benchmark_name
         ]
-        process = subprocess.run(command, capture_output=True, shell=False, env=env)
+        
+        try:
+            process = subprocess.run(command, capture_output=True, shell=False, env=env, timeout=60)
+        except subprocess.TimeoutExpired:
+            return None
 
         if process.returncode != 0:
             return None

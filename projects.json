@@ -12,10 +12,10 @@
     {
         "git": {
             "owner": "JCTools",
-            "repo": "JCTools"
+            "repo": "JCTools",
+            "branch": "master"
         },
         "name": "JCTools",
-        "branch": "master",
         "path": "JCTools",
         "target_package": "org.jctools"
     },
@@ -93,13 +93,7 @@
         },
         "name": "zipkin",
         "path": "zipkin",
-        "target_package": "zipkin",
-        "custom_commands": {
-            "benchmark": {
-                "command": "mvn install -pl benchmarks -am -Dmaven.test.skip.exec=true -DskipTests -Dlicense.skip=true",
-                "cwd": ""
-            }
-        }
+        "target_package": "zipkin"
     },
     {
         "git":{

@@ -67,5 +67,8 @@ class FileUtils:
     
     @staticmethod
     def write_json_file(file_path: str, data: Union[dict, list]):
+        # If the file's directory doesn't exist, create it
+        directory = os.path.dirname(file_path)
+        FileUtils.create_directory(directory)
         with open(file_path, 'w') as f:
             json.dump(data, f, indent=4)

@@ -1,6 +1,6 @@
 import os
 from typing import Optional
-from git import Repo
+from git import Repo, Commit, NULL_TREE
 
 from jphb.core.benchmark_presence_miner import BenchmarkPresenceMiner
 
@@ -34,7 +34,35 @@ class ProjectChangeMiner:
             for info in extra_info:
                 f.write(f'{info}\n')
 
-    def mine(self, force: bool = False, custom_commits: Optional[list[str]] = None) -> int:
+    def __is_file_new_in_commit(self, commit: Commit, parent: Commit, file_path: str) -> bool:
+        # Get the diff between the current commit and its parent (or NULL_TREE for the initial commit)
+        diffs = parent.diff(commit)
+        
+        # Check if the file was added in this commit
+        for diff in diffs:
+            if diff.a_path == file_path and diff.change_type == 'A':
+                return True
+        return False
+    
+    def __get_deleted_and_moved_files(self, commit: Commit, parent: Commit) -> tuple[list[str], list[tuple[str, str]]]:
+        # Get the diff between the current commit and its parent (or NULL_TREE for the initial commit)
+        diffs = parent.diff(commit)
+
+        deleted_files = []
+        moved_files = []
+
+        # Check for deleted and moved files
+        for diff in diffs:
+            # Detect deleted files
+            if diff.change_type == 'D':
+                deleted_files.append(diff.a_path)
+            # Detect renamed/moved files
+            elif diff.change_type == 'R':
+                moved_files.append((diff.a_path, diff.b_path))
+
+        return deleted_files, moved_files
+
+    def mine(self, force: bool = False, custom_commits: Optional[list[str]] = None, max_commits: Optional[int] = None) -> int:
         repo = Repo(self.project_path)
 
         # Iterate over all commits
@@ -43,6 +71,10 @@ class ProjectChangeMiner:
         for commit_index, commit in enumerate(repo.iter_commits(self.project_branch), start=1):
             # Keep track of the number of changed methods
             num_changed_methods = 0
+
+            # Check if we reached the maximum number of commits
+            if max_commits and commit_index > max_commits:
+                break
 
             # Check if there are custom commits to process
             if custom_commits and commit.hexsha not in custom_commits:
@@ -99,12 +131,13 @@ class ProjectChangeMiner:
             all_refactorings = refactoring_miner.mine(commit_hash=commit.hexsha)
 
             # Remove the deleted or moved files (since we check the new code for diff)
+            deleted_files, moved_files = self.__get_deleted_and_moved_files(commit=commit, parent=previous_commit)
             deleted_mapped_files = {}
-            for f_name, f_data in commit.stats.files.items():
+            for f_name in list(commit.stats.files.keys()):
                 if not str(f_name).endswith('.java'):
                     continue
 
-                if f_data['insertions'] == 0 and f_data['deletions'] == f_data['lines']:
+                if str(f_name) in deleted_files or any(str(f_name) in moved_file for moved_file in moved_files):
                     # Check its refactorings
                     f_refactorings = refactoring_miner.get_refactorings_for_file(all_refactorings, str(f_name))
                     is_replaced, new_file = refactoring_miner.is_file_replaced(f_refactorings, str(f_name))
@@ -115,13 +148,9 @@ class ProjectChangeMiner:
                     changed_files = [file for file in changed_files if file != f_name]
 
             # Check which files have been newly added in the new commit that were not in the previous commit entirely (i.e., not refactored)
-            for f_name, f_data in commit.stats.files.items():
-                if not str(f_name).endswith('.java'):
-                    continue
-
-                if f_data['insertions'] == f_data['lines']:
-                    if f_name not in deleted_mapped_files and f_name in changed_files:
-                        changed_files = [file for file in changed_files if file != f_name]
+            for file_ in changed_files:
+                if self.__is_file_new_in_commit(commit=commit, parent=previous_commit, file_path=str(file_)):
+                    changed_files.remove(file_)
 
             method_changes = {}
             # Iterate over all changed .java files
@@ -131,13 +160,18 @@ class ProjectChangeMiner:
                     previous_commit.hexsha: set()
                 }
 
-                new_file = repo.git.show(f'{commit.hexsha}:{file}')
+                try:
+                    new_file = repo.git.show(f'{commit.hexsha}:{file}')
 
-                if file in deleted_mapped_files:
-                    old_file_name = deleted_mapped_files[file]
-                else:
-                    old_file_name = file
-                old_file = repo.git.show(f'{previous_commit.hexsha}:{old_file_name}')
+                    if file in deleted_mapped_files:
+                        old_file_name = deleted_mapped_files[file]
+                    else:
+                        old_file_name = file
+                    old_file = repo.git.show(f'{previous_commit.hexsha}:{old_file_name}')
+                except:
+                    self.__write_error(commit_folder, 'git show', commit.hexsha, 'None', [])
+                    Printer.error(f'Error in commit {commit.hexsha}', num_indentations=self.printer_indent)
+                    continue
 
                 # Remove the comments from the files (since we are comparing the methods)
                 srcml_service = SrcMLService()
