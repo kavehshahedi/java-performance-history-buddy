@@ -17,6 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('project_name', type=str, help='Name of the project to analyze')
     parser.add_argument('--kernel', action='store_true', help='Enable kernel tracing', default=False)
     parser.add_argument('--llm', action='store_true', help='Enable using LLM to aid method changes', default=False)
+    parser.add_argument('--email', action='store_true', help='Enable email notifications', default=False)
     args = parser.parse_args()
 
     project = None
@@ -28,5 +29,9 @@ if __name__ == '__main__':
     if project is None:
         raise ValueError(f'Project with name {args.project_name} not found')
 
-    pipeline = Pipeline(project=project, base_project_path=BASE_PROJECT_PATH, use_lttng=args.kernel, use_llm=args.llm)
+    pipeline = Pipeline(project=project,
+                        base_project_path=BASE_PROJECT_PATH,
+                        use_lttng=args.kernel,
+                        use_llm=args.llm,
+                        use_email_notification=args.email)
     pipeline.run()

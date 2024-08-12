@@ -10,13 +10,18 @@ from jphb.core.benchmark_executor import BenchmarkExecutor
 
 from jphb.services.git_service import GitService
 from jphb.services.db_service import DBService
+from jphb.services.email_service import EmailService
 
 from jphb.utils.printer import Printer
 from jphb.utils.file_utils import FileUtils
 
 class Pipeline:
 
-    def __init__(self, project: dict, base_project_path: str, use_lttng: bool = False, use_llm: bool = False) -> None:
+    def __init__(self, project: dict,
+                 base_project_path: str,
+                 use_lttng: bool = False,
+                 use_llm: bool = False,
+                 use_email_notification: bool = False) -> None:
         self.project_name = project['name']
         self.project_path = os.path.join(base_project_path, self.project_name)
         self.target_package = project['target_package']
@@ -28,6 +33,8 @@ class Pipeline:
         self.custom_commands = project.get('custom_commands', None)
         self.use_lttng = use_lttng
         self.use_llm = use_llm
+
+        self.use_email_notification = use_email_notification
 
         self.db_service = DBService()
 
@@ -164,3 +171,12 @@ class Pipeline:
         self.db_service.update_project(project_name=self.project_name,
                                        sample_size=sample_size,
                                        sampled_count=sampled_count)
+        
+        # Send an email notification (if enabled)
+        if self.use_email_notification:
+            email_service = EmailService()
+            email_service.send_email(to_email=os.getenv('SMTP_TO_EMAIL', 'INVALID_EMAIL'),
+                                    subject=f'JPHB Pipeline - {self.project_name} (Completed)',
+                                    message=f"""The JPHB pipeline for {self.project_name} has been completed successfully.
+                                    \nSample Size: {sample_size}
+                                    \nSampled Count: {sampled_count})""")
