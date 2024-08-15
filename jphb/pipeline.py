@@ -65,7 +65,7 @@ class Pipeline:
                                     project_branch=self.git_info['branch'],
                                     use_llm=self.use_llm,
                                     printer_indent=1)
-            num_mined_commits = pcm.mine(force=False, max_commits=200)
+            num_mined_commits = pcm.mine(force=False)
 
             # Step 3: Mine benchmark presence
             Printer.separator()
@@ -73,6 +73,7 @@ class Pipeline:
             bpm = BenchmarkPresenceMiner(project_name=self.project_name,
                                         project_path=self.project_path,
                                         project_branch=self.git_info['branch'],
+                                        check_root_pom=True,
                                         printer_indent=1)
             num_commits_with_benchmark = bpm.mine()
 

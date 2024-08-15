@@ -50,15 +50,21 @@ class SrcMLService:
                 m_signature = method_name.split('(')[0]
                 m_signature = ' '.join(m_signature.split(' ')[0:-1])
 
+                method_declaration = ''
+                if m_signature != '':
+                    method_declaration = f'{m_signature} '
+                if class_name != '':
+                    method_declaration += f'{class_name}.'
+
                 if with_body:
                     method_block = method.find('src:block', self.namespace)
                     if method_block is None:
                         continue
                     method_body = ''.join(method_block.itertext()).strip()
                     method_body = re.sub(' +', ' ', ''.join(method_body).strip().replace('\n', '').replace('\t', ''))
-                    methods.append(f'{m_signature} {class_name}.{m_name_only} {method_body}')
+                    methods.append(f'{method_declaration}{m_name_only} {method_body}')
                 else:
-                    methods.append(f'{m_signature} {class_name}.{m_name_only}')
+                    methods.append(f'{method_declaration}{m_name_only}')
             except:
                 continue
 

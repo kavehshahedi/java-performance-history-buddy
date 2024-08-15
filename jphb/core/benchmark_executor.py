@@ -70,9 +70,10 @@ class BenchmarkExecutor:
 
         # Variables
         project_benchmark_directory = jmh_dependency['benchmark_directory']
-        if custom_commands and 'benchmark' in custom_commands and 'cwd' in custom_commands['benchmark']:
-            project_benchmark_directory = custom_commands['benchmark']['cwd']
         project_benchmark_name = jmh_dependency['benchmark_name']
+        if custom_commands and 'run' in custom_commands:
+            project_benchmark_directory = custom_commands['run']['benchmark_directory']
+            project_benchmark_name = custom_commands['run']['benchmark_name']
 
         # Global variables
         self.java_version = java_version['version']
@@ -100,34 +101,34 @@ class BenchmarkExecutor:
                 pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
                 pom_service.set_java_version(self.java_version)
 
-            if not custom_commands:
-                # Check whether the project is buildable
-                Printer.info(f'Checking if project is buildable...', num_indentations=self.printer_indent+1)
-                is_project_buildable = self.__build_project(build_anyway=(commit_hash == current_commit_hash),
-                                                            java_version=self.java_version,
-                                                            commit_hash=commit_hash)
-                if not is_project_buildable:
-                    Printer.error(f'Project is not buildable', num_indentations=self.printer_indent+2)
-                    return False, None
+            # Check whether the project is buildable
+            Printer.info(f'Checking if project is buildable...', num_indentations=self.printer_indent+1)
+            is_project_buildable = self.__build_project(build_anyway=(commit_hash == current_commit_hash),
+                                                        java_version=self.java_version,
+                                                        commit_hash=commit_hash,
+                                                        custom_command = custom_commands['install'] if custom_commands and 'install' in custom_commands else None)
+            if not is_project_buildable:
+                Printer.error(f'Project is not buildable', num_indentations=self.printer_indent+2)
+                return False, None
 
-                Printer.success(f'Project is buildable', num_indentations=self.printer_indent+2)
-            else:
-                # Check whether the benchmarks are buildable
-                Printer.info(f'Checking if benchmarks are buildable...', num_indentations=self.printer_indent+1)
-                is_benchmark_buildable = self.__build_benchmarks(benchmark_directory=project_benchmark_directory,
-                                                                benchmark_commit_hash=commit_hash,
-                                                                build_anyway=(commit_hash == current_commit_hash),
-                                                                java_version=self.java_version,
-                                                                custom_command = custom_commands['install'] if custom_commands and 'install' in custom_commands else None)
-            
-                if not is_benchmark_buildable:
-                    Printer.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
-                    if commit_hash == current_commit_hash:
-                        is_current_benchmark_built = False
-                    else:
-                        is_previous_benchmark_built = False
-                else:
-                    Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
+            Printer.success(f'Project is buildable', num_indentations=self.printer_indent+2)
+
+            # # Check whether the benchmarks are buildable
+            # Printer.info(f'Checking if benchmarks are buildable...', num_indentations=self.printer_indent+1)
+            # is_benchmark_buildable = self.__build_benchmarks(benchmark_directory=project_benchmark_directory,
+            #                                                 benchmark_commit_hash=commit_hash,
+            #                                                 build_anyway=(commit_hash == current_commit_hash),
+            #                                                 java_version=self.java_version,
+            #                                                 custom_command = custom_commands['install'] if custom_commands and 'install' in custom_commands else None)
+        
+            # if not is_benchmark_buildable:
+            #     Printer.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
+            #     if commit_hash == current_commit_hash:
+            #         is_current_benchmark_built = False
+            #     else:
+            #         is_previous_benchmark_built = False
+            # else:
+            #     Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
 
             # Check the hash of the benchmarks folder
             if commit_hash == current_commit_hash:
@@ -307,20 +308,29 @@ class BenchmarkExecutor:
 
     def __build_project(self, commit_hash: str,
                         java_version:str = '11',
-                        build_anyway = False) -> bool:        
+                        build_anyway = False,
+                        custom_command: Optional[dict] = None) -> bool:      
         # Check if in the history, the build is successful
         history_path = os.path.join('results', self.project_name, 'build_history.json')
         build_history = FileUtils.read_json_file(history_path)
 
         if commit_hash in build_history and not build_anyway:
             return build_history[commit_hash]
+        
+        # Basically, the baseline command has been indicated in MvnService class. If there is a custom command, it will be used.
+        command = None
+        cwd = os.path.join(self.project_path)
+        if custom_command:
+            command = custom_command['command'].split()
+            cwd = os.path.join(self.project_path, custom_command['cwd'])
 
         Printer.info(f'Building the project locally with Java {self.java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
-        status, jv = mvn_service.install(cwd=self.project_path,
+        status, jv = mvn_service.install(cwd=cwd,
                                          java_version=java_version,
-                                         verbose=True,
-                                         retry_with_other_java_versions=True)
+                                         verbose=False,
+                                         retry_with_other_java_versions=True,
+                                         custom_command=command)
 
         # Save the result
         build_history[commit_hash] = status
@@ -501,11 +511,19 @@ class BenchmarkExecutor:
                                                  ) -> Tuple[bool, dict[str, list[str]]]:
         # Preprocess the target functions once and store the results in a set
         tf = {f.split('(')[0].strip().split(' ')[-1].strip() for f in target_methods}
+        tf_reduced = {f.split('.')[-1] for f in tf}
 
         chosen_methods = {commit_hash: [] for commit_hash in changed_methods.keys()}
         for commit_hash, methods in changed_methods.items():
             # Use set comprehension to directly add the matching methods
-            chosen_methods[commit_hash] = [method for method in methods if method.split('(')[0].strip().split(' ')[-1].strip() in tf]
+            for method_ in methods:
+                method_signature = method_.split('(')[0].strip().split(' ')[-1].strip()
+                if '.' in method_signature:
+                    if method_signature in tf:
+                        chosen_methods[commit_hash].append(method_)
+                else:
+                    if method_signature in tf_reduced:
+                        chosen_methods[commit_hash].append(method_)
 
         return len(list(chosen_methods.values())[0]) > 0, chosen_methods
 

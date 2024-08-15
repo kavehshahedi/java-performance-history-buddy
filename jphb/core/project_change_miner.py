@@ -234,7 +234,7 @@ class ProjectChangeMiner:
 
                 for file_, commit_, diff_key in [(file, commit, 'first'), (old_file_name, previous_commit, 'second')]:
                     file_methods = srcml_service.get_methods(repo.git.show(f'{commit_.hexsha}:{file_}'),
-                                                             remove_comments=True)
+                                                             remove_comments=False)
 
                     for method_ in file_methods:
                         converted_method_name = java_service.convert_method_signature(method_)

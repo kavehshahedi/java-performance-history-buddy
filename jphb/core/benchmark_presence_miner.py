@@ -11,12 +11,16 @@ from jphb.services.pom_service import PomService
 
 class BenchmarkPresenceMiner:
 
-    def __init__(self, project_name: str, project_path: str, project_branch: str, **kwargs) -> None:
+    def __init__(self, project_name: str,
+                 project_path: str,
+                 project_branch: str,
+                 **kwargs) -> None:
         self.project_name = project_name
         self.project_path = project_path
         self.project_branch = project_branch
 
         self.printer_indent = kwargs.get('printer_indent', 0)
+        self.check_root_pom = kwargs.get('check_root_pom', False)
 
     def __list_blobs(self, tree: Tree) -> list:
         blobs = []
@@ -47,7 +51,7 @@ class BenchmarkPresenceMiner:
                 if 'jmh-core' in pom_content:
                     # Check if it isn't the main pom.xml file that is in the root directory of the project
                     # We should check the blob path to make sure that the pom.xml file is not in the root directory
-                    if blob.path == 'pom.xml':
+                    if blob.path == 'pom.xml' and not self.check_root_pom:
                         continue
 
                     there_is_dependency = True
