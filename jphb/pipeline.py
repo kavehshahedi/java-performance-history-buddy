@@ -67,7 +67,7 @@ class Pipeline:
                                     custom_benchmark=self.custom_benchmark,
                                     use_llm=self.use_llm,
                                     printer_indent=1)
-            num_mined_commits = pcm.mine(force=False, max_commits=100)
+            num_mined_commits = pcm.mine(force=False)
 
             # Step 3: Mine benchmark presence
             Printer.separator()

@@ -581,13 +581,13 @@ class BenchmarkExecutor:
         chosen_methods = {commit_hash: [] for commit_hash in changed_methods.keys()}
         for commit_hash, methods in changed_methods.items():
             # Use set comprehension to directly add the matching methods
-            methods_ = [method.split('(')[0].strip().split(' ')[-1].strip() for method in methods]
-            for method_ in methods_:
-                if '.' in method_:
-                    if method_ in tf:
+            for method_ in methods:
+                shortened = method_.split('(')[0].strip().split(' ')[-1].strip()
+                if '.' in shortened:
+                    if shortened in tf:
                         chosen_methods[commit_hash].append(method_)
                 else:
-                    if method_ in tf_reduced:
+                    if shortened in tf_reduced:
                         chosen_methods[commit_hash].append(method_)
 
         return len(list(chosen_methods.values())[0]) > 0, chosen_methods
