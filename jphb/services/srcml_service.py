@@ -100,7 +100,7 @@ class SrcMLService:
         """
         output_file = f'{tempfile.NamedTemporaryFile(delete=True).name}.java'
         with open(output_file, 'w') as f:
-            f.write(code)
+            f.write(str(code).encode('utf-8', errors='ignore').decode('utf-8'))
 
         subprocess.run(['srcml', output_file, '--position', '-o', output_file + '.xml'], capture_output=True)
         tree = ET.parse(output_file + '.xml')
