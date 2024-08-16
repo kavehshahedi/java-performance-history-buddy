@@ -45,13 +45,27 @@
     },
     {
         "git": {
+            "owner": "easymock",
+            "repo": "objenesis",
+            "branch": "master"
+        },
+        "name": "objenesis",
+        "path": "objenesis",
+        "target_package": "org.objenesis"
+    },
+    {
+        "git": {
             "owner": "elastic",
             "repo": "apm-agent-java",
             "branch": "main"
         },
         "name": "apm-agent-java",
         "path": "apm-agent-java",
-        "target_package": "co.elastic.apm"
+        "target_package": "co.elastic.apm",
+        "custom_benchmark": {
+            "directory": "apm-agent-benchmarks",
+            "module": "apm-agent-benchmarks"
+        }
     },
     {
         "git": {
@@ -81,13 +95,7 @@
         },
         "name": "rdf4j",
         "path": "rdf4j",
-        "target_package": "org.eclipse.rdf4j",
-        "custom_commands": {
-            "benchmark": {
-                "command": "mvn install -Dmaven.test.skip.exec=true -DskipTests -Dlicense.skip=true",
-                "cwd": "testsuites/benchmark"
-            }
-        }
+        "target_package": "org.eclipse.rdf4j"
     },
     {
         "git":{

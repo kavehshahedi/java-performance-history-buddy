@@ -330,7 +330,7 @@ class BenchmarkExecutor:
 
         if commit_hash in build_history and not build_anyway:
             return build_history[commit_hash]
-
+        
         Printer.info(f'Building the project locally with Java {self.java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
         status, jv = mvn_service.install(cwd=self.project_path,
@@ -362,7 +362,7 @@ class BenchmarkExecutor:
         # Check if the build has already been done
         if benchmark_commit_hash in build_history and not build_anyway:
             return build_history[benchmark_commit_hash]
-        
+                
         # Basically, the baseline command has been indicated in MvnService class. If there is a custom command, it will be used.
         command = None
         cwd = os.path.join(self.project_path, benchmark_directory)
@@ -401,7 +401,7 @@ class BenchmarkExecutor:
         # Check if the build has already been done
         if benchmark_commit_hash in build_history and not build_anyway:
             return build_history[benchmark_commit_hash]
-
+        
         Printer.info(f'Building the benchmarks with custom module locally with Java {java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
         status, jv = mvn_service.package_module(cwd=self.project_path,
@@ -553,11 +553,11 @@ class BenchmarkExecutor:
         
         try:
             process = subprocess.run(command, capture_output=True, shell=False, env=env, timeout=60)
-        except subprocess.TimeoutExpired:
-            return None
 
-        if process.returncode != 0:
-            return None
+            if process.returncode != 0:
+                return None
+        except subprocess.TimeoutExpired:
+            pass
 
         target_methods = set()
 
@@ -682,3 +682,25 @@ class BenchmarkExecutor:
             performance_data[benchmark_name] = method_performances
 
         return performance_data
+    
+    def update_java_version_everywhere(self) -> None:
+        for root, _, files in os.walk(self.project_path):
+            for file in files:
+                if file == 'pom.xml':
+                    pom_path = os.path.join(root, file)
+                    
+                    pom_service = PomService(pom_source=pom_path)
+                    current_version = pom_service.get_java_version()
+
+                    # If it is none, continue
+                    if not current_version:
+                        continue
+
+                    # Check if current version is a float and less than 1.8
+                    try:
+                        current_version = float(current_version)
+                    except:
+                        continue
+
+                    if current_version and float(current_version) < 1.8:
+                        pom_service.set_java_version("1.8")

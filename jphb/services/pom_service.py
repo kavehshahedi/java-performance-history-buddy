@@ -138,10 +138,15 @@ class PomService:
 
         if self.properties is not None:
             source = self.properties.find('mvn:maven.compiler.source', self.namespace)
+            target = self.properties.find('mvn:maven.compiler.target', self.namespace)
             version = self.properties.find('mvn:java.version', self.namespace)
+            
             if source is not None:
                 source.text = new_version
-            elif version is not None:
+            if target is not None:
+                target.text = new_version
+
+            if version is not None:
                 version.text = new_version
         
         build = self.root.find('mvn:build', self.namespace)
