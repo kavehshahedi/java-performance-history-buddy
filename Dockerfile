@@ -21,9 +21,13 @@ RUN apt-get update && apt-get install -y \
     unzip \
     cpio \
     man \
-    maven \
     lttng-tools\
     lttng-modules-dkms && \
+    wget -q https://dlcdn.apache.org/maven/maven-3/3.9.8/binaries/apache-maven-3.9.8-bin.zip && \
+    unzip apache-maven-3.9.8-bin.zip && \
+    mv apache-maven-3.9.8 /usr/local && \
+    rm apache-maven-3.9.8-bin.zip && \
+    ln -s /usr/local/apache-maven-3.9.8/bin/mvn /usr/bin/mvn && \
     wget -q http://archive.ubuntu.com/ubuntu/pool/main/libx/libxslt/libxslt1.1_1.1.34-4ubuntu0.22.04.1_amd64.deb && \
     apt-get install -y ./libxslt1.1_1.1.34-4ubuntu0.22.04.1_amd64.deb --fix-missing && \
     rm libxslt1.1_1.1.34-4ubuntu0.22.04.1_amd64.deb && \
