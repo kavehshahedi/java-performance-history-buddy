@@ -15,10 +15,17 @@ from jphb.utils.printer import Printer
 
 class ProjectChangeMiner:
 
-    def __init__(self, project_name: str, project_path: str, project_branch: str, use_llm: bool = False, **kwargs) -> None:
+    def __init__(self, project_name: str,
+                 project_path: str,
+                 project_branch: str,
+                 custom_benchmark: dict,
+                 use_llm: bool = False,
+                 **kwargs) -> None:
         self.project_name = project_name
         self.project_path = project_path
         self.project_branch = project_branch
+        self.custom_benchmark = custom_benchmark
+
         self.use_llm = use_llm
         if use_llm:
             self.llm_service = LLMService()
@@ -118,7 +125,10 @@ class ProjectChangeMiner:
             changed_files = [file for file in commit.stats.files if str(file).endswith('.java')]
 
             # Remove the changed files that are within the benchmark directory
-            bench_presence_miner = BenchmarkPresenceMiner(self.project_name, self.project_path, self.project_branch)
+            bench_presence_miner = BenchmarkPresenceMiner(self.project_name,
+                                                          self.project_path,
+                                                          self.project_branch,
+                                                          custom_benchmark=self.custom_benchmark)
             there_is_dependency, benchmark_directory, _ = bench_presence_miner.get_benchmarks_info(commit)
             if there_is_dependency:
                 changed_files = [file for file in changed_files if not str(file).startswith(benchmark_directory)]

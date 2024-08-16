@@ -27,7 +27,11 @@
         },
         "name": "debezium",
         "path": "debezium",
-        "target_package": "io.debezium"
+        "target_package": "io.debezium",
+        "custom_benchmark": {
+            "directory": "debezium-microbenchmark",
+            "module": "debezium-microbenchmark"
+        }
     },
     {
         "git":{

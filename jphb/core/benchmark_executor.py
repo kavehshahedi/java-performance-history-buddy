@@ -47,7 +47,7 @@ class BenchmarkExecutor:
                 changed_methods: dict[str, list[str]],
                 target_package: str,
                 java_version: dict,
-                custom_commands: Optional[dict] = None) -> Tuple[bool, Optional[dict]]:
+                custom_benchmark: Optional[dict] = None) -> Tuple[bool, Optional[dict]]:
         """
         Execute the benchmarks for the given project
         Steps:
@@ -69,19 +69,20 @@ class BenchmarkExecutor:
         """
 
         # Variables
-        project_benchmark_directory = jmh_dependency['benchmark_directory']
-        project_benchmark_name = jmh_dependency['benchmark_name']
-        if custom_commands and 'run' in custom_commands:
-            project_benchmark_directory = custom_commands['run']['benchmark_directory']
-            project_benchmark_name = custom_commands['run']['benchmark_name']
+        self.project_benchmark_directory = jmh_dependency['benchmark_directory']
+        self.project_benchmark_name = jmh_dependency['benchmark_name']
+        self.project_benchmark_module = None
+        if custom_benchmark:
+            self.project_benchmark_directory = custom_benchmark.get('directory', self.project_benchmark_directory)
+            self.project_benchmark_module = custom_benchmark.get('module', None)
 
         # Global variables
         self.java_version = java_version['version']
 
         # Print the variables
         Printer.info(f'Info: {current_commit_hash}', num_indentations=self.printer_indent)
-        Printer.info(f'Benchmark directory: {project_benchmark_directory}', num_indentations=self.printer_indent)
-        Printer.info(f'Benchmark name: {project_benchmark_name}', num_indentations=self.printer_indent)
+        Printer.info(f'Benchmark directory: {self.project_benchmark_directory}', num_indentations=self.printer_indent)
+        Printer.info(f'Benchmark name: {self.project_benchmark_name}', num_indentations=self.printer_indent)
         Printer.info(f'Java version: {self.java_version}', num_indentations=self.printer_indent)
         Printer.separator(num_indentations=self.printer_indent)
 
@@ -101,40 +102,51 @@ class BenchmarkExecutor:
                 pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
                 pom_service.set_java_version(self.java_version)
 
-            # Check whether the project is buildable
-            Printer.info(f'Checking if project is buildable...', num_indentations=self.printer_indent+1)
-            is_project_buildable = self.__build_project(build_anyway=(commit_hash == current_commit_hash),
-                                                        java_version=self.java_version,
-                                                        commit_hash=commit_hash,
-                                                        custom_command = custom_commands['install'] if custom_commands and 'install' in custom_commands else None)
-            if not is_project_buildable:
-                Printer.error(f'Project is not buildable', num_indentations=self.printer_indent+2)
-                return False, None
+            if self.project_benchmark_module:
+                # Check whether the benchmarks are buildable
+                Printer.info(f'Checking if benchmarks with custom module are buildable...', num_indentations=self.printer_indent+1)
+                is_benchmark_buildable = self.__build_benchmarks_with_module(module=self.project_benchmark_module,
+                                                                            benchmark_commit_hash=commit_hash,
+                                                                            build_anyway=(commit_hash == current_commit_hash),
+                                                                            java_version=self.java_version)
 
-            Printer.success(f'Project is buildable', num_indentations=self.printer_indent+2)
+                if not is_benchmark_buildable:
+                    Printer.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
+                    return False, None
+                
+                Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
+            else:
+                # Check whether the project is buildable
+                Printer.info(f'Checking if project is buildable...', num_indentations=self.printer_indent+1)
+                is_project_buildable = self.__build_project(build_anyway=(commit_hash == current_commit_hash),
+                                                            java_version=self.java_version,
+                                                            commit_hash=commit_hash)
+                if not is_project_buildable:
+                    Printer.error(f'Project is not buildable', num_indentations=self.printer_indent+2)
+                    return False, None
 
-            # # Check whether the benchmarks are buildable
-            # Printer.info(f'Checking if benchmarks are buildable...', num_indentations=self.printer_indent+1)
-            # is_benchmark_buildable = self.__build_benchmarks(benchmark_directory=project_benchmark_directory,
-            #                                                 benchmark_commit_hash=commit_hash,
-            #                                                 build_anyway=(commit_hash == current_commit_hash),
-            #                                                 java_version=self.java_version,
-            #                                                 custom_command = custom_commands['install'] if custom_commands and 'install' in custom_commands else None)
-        
-            # if not is_benchmark_buildable:
-            #     Printer.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
-            #     if commit_hash == current_commit_hash:
-            #         is_current_benchmark_built = False
-            #     else:
-            #         is_previous_benchmark_built = False
-            # else:
-            #     Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
+                Printer.success(f'Project is buildable', num_indentations=self.printer_indent+2)
+    
+                # Check whether the benchmarks are buildable
+                Printer.info(f'Checking if benchmarks are buildable...', num_indentations=self.printer_indent+1)
+                is_benchmark_buildable = self.__build_benchmarks(benchmark_directory=self.project_benchmark_directory,
+                                                                benchmark_commit_hash=commit_hash,
+                                                                build_anyway=(commit_hash == current_commit_hash),
+                                                                java_version=self.java_version)            
+                if not is_benchmark_buildable:
+                    Printer.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
+                    if commit_hash == current_commit_hash:
+                        is_current_benchmark_built = False
+                    else:
+                        is_previous_benchmark_built = False
+                else:
+                    Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
 
             # Check the hash of the benchmarks folder
             if commit_hash == current_commit_hash:
-                current_benchmark_directory_hash = FileUtils.get_folder_hash(os.path.join(self.project_path, project_benchmark_directory, 'src', 'main'))
+                current_benchmark_directory_hash = FileUtils.get_folder_hash(os.path.join(self.project_path, self.project_benchmark_directory, 'src', 'main'))
             else:
-                previous_benchmark_directory_hash = FileUtils.get_folder_hash(os.path.join(self.project_path, project_benchmark_directory, 'src', 'main'))
+                previous_benchmark_directory_hash = FileUtils.get_folder_hash(os.path.join(self.project_path, self.project_benchmark_directory, 'src', 'main'))
                 
         # If both benchmarks are not built, return    
         if not is_previous_benchmark_built and not is_current_benchmark_built:
@@ -158,13 +170,11 @@ class BenchmarkExecutor:
             Printer.info(f'Replacing the benchmarks with the other commit...', num_indentations=self.printer_indent)
             self.__replace_benchmarks(from_commit_hash=commit_to_use_for_benchmark,
                                       to_commit_hash=current_commit_hash,
-                                      benchmark_directory=project_benchmark_directory)
-            status = self.__build_benchmarks(benchmark_directory=project_benchmark_directory,
+                                      benchmark_directory=self.project_benchmark_directory)
+            status = self.__build_benchmarks(benchmark_directory=self.project_benchmark_directory,
                                              benchmark_commit_hash=current_commit_hash,
                                              build_anyway=True, # Since we need to run the benchmarks, we build them anyway
-                                             java_version=self.java_version,
-                                             custom_command = custom_commands['benchmark'] if custom_commands and 'benchmark' in custom_commands else None)
-            
+                                             java_version=self.java_version)            
             if not status:
                 Printer.error(f'Benchmarks are not compatible with the other commit', num_indentations=self.printer_indent+1)
                 return False, None
@@ -176,7 +186,7 @@ class BenchmarkExecutor:
 
         # Get the benchmark history
         Printer.info('Checking if benchmark has previously executed...', num_indentations=self.printer_indent+1)
-        hash_to_check = FileUtils.get_folder_hash(os.path.join(self.project_path, project_benchmark_directory, 'src', 'main'))
+        hash_to_check = FileUtils.get_folder_hash(os.path.join(self.project_path, self.project_benchmark_directory, 'src', 'main'))
         has_benchmark_executed, benchmark_history = self.__has_benchmark_previously_executed(hash_to_check=hash_to_check)
         if has_benchmark_executed:
             Printer.success(f'Benchmark has previously executed', num_indentations=self.printer_indent+2)
@@ -184,8 +194,8 @@ class BenchmarkExecutor:
             Printer.warning(f'Benchmark has not previously executed', num_indentations=self.printer_indent+2)
 
         Printer.info('Getting list of benchmarks...', num_indentations=self.printer_indent)
-        benchmark_jar_path, list_of_benchmarks = self.__get_list_of_benchmarks(benchmark_directory=project_benchmark_directory,
-                                                                               benchmark_name=project_benchmark_name,
+        benchmark_jar_path, list_of_benchmarks = self.__get_list_of_benchmarks(benchmark_directory=self.project_benchmark_directory,
+                                                                               benchmark_name=self.project_benchmark_name,
                                                                                java_version=self.java_version)
         if not list_of_benchmarks:
             Printer.error(f'Can\'t get list of benchmarks', num_indentations=self.printer_indent+1)
@@ -255,7 +265,7 @@ class BenchmarkExecutor:
                     target_package=target_package,
                     instrument=methods,
                     ignore=[],
-                    instrument_main_method=True,
+                    instrument_main_method=False,
                     add_timestamp_to_file_names=True,
                     use_hash=True,
                     yaml_file=os.path.join(config_directory, f'{benchmark}.yaml')
@@ -277,17 +287,22 @@ class BenchmarkExecutor:
                     Printer.info(f'Replacing the benchmarks with the other commit...', num_indentations=self.printer_indent)
                     self.__replace_benchmarks(from_commit_hash=commit_to_use_for_benchmark,
                                                 to_commit_hash=commit_hash_,
-                                                benchmark_directory=project_benchmark_directory)
-                    
-                self.__build_project(commit_hash=commit_hash_,
-                                     build_anyway=True, # Since we need to run the benchmarks, we build them anyway
-                                     java_version=self.java_version)
-                self.__build_benchmarks(benchmark_directory=project_benchmark_directory,
-                                        benchmark_commit_hash=commit_hash_,
-                                        build_anyway=True, # Since we need to run the benchmarks, we build them anyway
-                                        java_version=self.java_version,
-                                        custom_command = custom_commands['benchmark'] if custom_commands and 'benchmark' in custom_commands else None)
+                                                benchmark_directory=self.project_benchmark_directory)
 
+                if self.project_benchmark_module:
+                    is_benchmark_buildable = self.__build_benchmarks_with_module(module=self.project_benchmark_module,
+                                                                                benchmark_commit_hash=commit_hash_,
+                                                                                build_anyway=True,
+                                                                                java_version=self.java_version)
+                else:  
+                    self.__build_project(commit_hash=commit_hash_,
+                                        build_anyway=True, # Since we need to run the benchmarks, we build them anyway
+                                        java_version=self.java_version)
+                    self.__build_benchmarks(benchmark_directory=self.project_benchmark_directory,
+                                            benchmark_commit_hash=commit_hash_,
+                                            build_anyway=True, # Since we need to run the benchmarks, we build them anyway
+                                            java_version=self.java_version)
+                
             Printer.info('Running benchmarks...', num_indentations=self.printer_indent+1)
             performance_data = self.__run_benchmark_and_get_performance_data(benchmark_jar_path=benchmark_jar_path,
                                                                              config_directory=config_directory,
@@ -308,29 +323,20 @@ class BenchmarkExecutor:
 
     def __build_project(self, commit_hash: str,
                         java_version:str = '11',
-                        build_anyway = False,
-                        custom_command: Optional[dict] = None) -> bool:      
+                        build_anyway = False) -> bool:        
         # Check if in the history, the build is successful
         history_path = os.path.join('results', self.project_name, 'build_history.json')
         build_history = FileUtils.read_json_file(history_path)
 
         if commit_hash in build_history and not build_anyway:
             return build_history[commit_hash]
-        
-        # Basically, the baseline command has been indicated in MvnService class. If there is a custom command, it will be used.
-        command = None
-        cwd = os.path.join(self.project_path)
-        if custom_command:
-            command = custom_command['command'].split()
-            cwd = os.path.join(self.project_path, custom_command['cwd'])
 
         Printer.info(f'Building the project locally with Java {self.java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
-        status, jv = mvn_service.install(cwd=cwd,
+        status, jv = mvn_service.install(cwd=self.project_path,
                                          java_version=java_version,
                                          verbose=False,
-                                         retry_with_other_java_versions=True,
-                                         custom_command=command)
+                                         retry_with_other_java_versions=True)
 
         # Save the result
         build_history[commit_hash] = status
@@ -370,7 +376,7 @@ class BenchmarkExecutor:
         status, jv = mvn_service.package(cwd=cwd,
                                          custom_command=command,
                                          java_version=java_version,
-                                         verbose=True,
+                                         verbose=False,
                                          retry_with_other_java_versions=True)
 
         # Save the result
@@ -383,26 +389,82 @@ class BenchmarkExecutor:
                 self.java_version = jv
 
         return status
+    
+    def __build_benchmarks_with_module(self, benchmark_commit_hash: str,
+                                       module: str,
+                                       java_version:str = '11',
+                                       build_anyway = False) -> bool:        
+        # Check if in the history, the build is successful
+        history_path = os.path.join('results', self.project_name, 'benchmark_build_history.json')
+        build_history = FileUtils.read_json_file(history_path)
+
+        # Check if the build has already been done
+        if benchmark_commit_hash in build_history and not build_anyway:
+            return build_history[benchmark_commit_hash]
+
+        Printer.info(f'Building the benchmarks with custom module locally with Java {java_version}', num_indentations=self.printer_indent+2)
+        mvn_service = MvnService()
+        status, jv = mvn_service.package_module(cwd=self.project_path,
+                                                module=module,
+                                                java_version=java_version,
+                                                verbose=False,
+                                                retry_with_other_java_versions=True)
+
+        # Save the result
+        build_history[benchmark_commit_hash] = status
+        FileUtils.write_json_file(history_path, build_history)
+
+        # Update the Java version is the build is successful
+        if status:
+            if jv != self.java_version:
+                Printer.info(f'Java version is updated to {jv}', num_indentations=self.printer_indent+3)
+                self.java_version = jv
+
+        return status
 
     def __get_list_of_benchmarks(self, benchmark_directory: str,
                                  benchmark_name: str,
                                  java_version:str) -> Tuple[str, list[str]]:        
         benchmark_jar_path = None
+        candidate_jars = []
         if benchmark_name == '' or not os.path.exists(os.path.join(self.project_path, benchmark_directory, 'target', f'{benchmark_name}')):
             for root, _, files in os.walk(os.path.join(self.project_path, benchmark_directory)):
                 for file in files:
                     if file.endswith('.jar'):
                         if any(substring in file.lower() for substring in ('shade', 'original', 'source', 'sources', 'javadoc', 'tests', 'test', 'snapshot')):
                             continue
-                        benchmark_jar_path = os.path.join(root, file)
-                        break
+                        candidate_jars.append(os.path.join(root, file))
 
         else:
             benchmark_jar_path = os.path.join(self.project_path, benchmark_directory, 'target', f'{benchmark_name}')
+                
+        while not benchmark_jar_path:
+            if not candidate_jars:
+                return '', []
+            
+            candidate_jar = candidate_jars.pop()
+            try:
+                mvn_service = MvnService()
+                env = mvn_service.update_java_home(java_version)
+                process = subprocess.run([
+                        'java',
+                        '-jar',
+                        candidate_jar,
+                        '-l'
+                    ], capture_output=True, shell=False, timeout=2, env=env)
+                
+                if process.returncode ==0:
+                    output = process.stdout.decode('utf-8').strip()
+                    if 'benchmarks:' in output.lower():
+                        benchmark_jar_path = candidate_jar
+                        self.project_benchmark_name = os.path.basename(benchmark_jar_path)
+                        break
+            except:
+                continue
 
         if not benchmark_jar_path:
             return '', []
-                
+
         try:
             mvn_service = MvnService()
             env = mvn_service.update_java_home(java_version)
@@ -511,18 +573,21 @@ class BenchmarkExecutor:
                                                  ) -> Tuple[bool, dict[str, list[str]]]:
         # Preprocess the target functions once and store the results in a set
         tf = {f.split('(')[0].strip().split(' ')[-1].strip() for f in target_methods}
+        tf = {f.split('$')[0] for f in tf}
+
+        # We have a reduced version of target functions, which contains only the method names without their declarations
         tf_reduced = {f.split('.')[-1] for f in tf}
 
         chosen_methods = {commit_hash: [] for commit_hash in changed_methods.keys()}
         for commit_hash, methods in changed_methods.items():
             # Use set comprehension to directly add the matching methods
-            for method_ in methods:
-                method_signature = method_.split('(')[0].strip().split(' ')[-1].strip()
-                if '.' in method_signature:
-                    if method_signature in tf:
+            methods_ = [method.split('(')[0].strip().split(' ')[-1].strip() for method in methods]
+            for method_ in methods_:
+                if '.' in method_:
+                    if method_ in tf:
                         chosen_methods[commit_hash].append(method_)
                 else:
-                    if method_signature in tf_reduced:
+                    if method_ in tf_reduced:
                         chosen_methods[commit_hash].append(method_)
 
         return len(list(chosen_methods.values())[0]) > 0, chosen_methods

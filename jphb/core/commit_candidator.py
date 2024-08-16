@@ -62,6 +62,7 @@ class CommitCandidator:
             pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
             java_version = pom_service.get_java_version()
             if java_version is None:
+                print(f'Java version is None for commit {commit_hash}')
                 continue
 
             # If the Java version is below 8, let's upgrade it to 8 for now

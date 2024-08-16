@@ -25,13 +25,7 @@ class MvnService:
         command = [
             'mvn',
             'clean',
-            'install',
-            '-DskipTests',
-            '-Dmaven.javadoc.skip=true',
-            '-Dcheckstyle.skip=true',
-            '-Denforcer.skip=true',
-            '-Dfindbugs.skip=true',
-            '-Dlicense.skip=true'
+            'install'
         ]
 
         if custom_command is not None:
@@ -49,7 +43,41 @@ class MvnService:
         command = [
             'mvn',
             'clean',
-            'package',
+            'package'
+        ]
+
+        if custom_command is not None:
+            command = custom_command
+
+        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout)
+    
+    def package_module(self, cwd: str,
+                module: str,
+                java_version: str = '11',
+                verbose: bool = False,
+                is_shell: bool = False,
+                retry_with_other_java_versions: bool = False,
+                timeout: int = 600) -> tuple[bool, str]:
+        command = [
+            'mvn',
+            '-pl',
+            module,
+            '-am',
+            'clean',
+            'package'
+        ]
+
+        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout)
+
+    def __run_mvn_command(self, cwd: str,
+                          command: list,
+                          java_version: str,
+                          verbose: bool,
+                          is_shell: bool,
+                          retry_with_other_java_versions: bool,
+                          timeout: int) -> tuple[bool, str]:
+        
+        COMMAND_ARGS = [
             '-DskipTests',
             '-Dmaven.javadoc.skip=true',
             '-Dcheckstyle.skip=true',
@@ -58,18 +86,8 @@ class MvnService:
             '-Dlicense.skip=true'
         ]
 
-        if custom_command is not None:
-            command = custom_command
+        command.extend(COMMAND_ARGS)
 
-        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout)
-    
-    def __run_mvn_command(self, cwd: str,
-                          command: list,
-                          java_version: str,
-                          verbose: bool,
-                          is_shell: bool,
-                          retry_with_other_java_versions: bool,
-                          timeout: int) -> tuple[bool, str]:
         retries = 0
         while True:
             env = MvnService.update_java_home(java_version)

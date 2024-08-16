@@ -30,10 +30,10 @@ class Pipeline:
             'repo': project['git']['repo'],
             'branch': project['git']['branch']
         }
-        self.custom_commands = project.get('custom_commands', None)
+        self.custom_benchmark = project.get('custom_benchmark', None)
+
         self.use_lttng = use_lttng
         self.use_llm = use_llm
-
         self.use_email_notification = use_email_notification
 
         self.db_service = DBService()
@@ -48,10 +48,10 @@ class Pipeline:
                 git_service = GitService(owner=self.git_info['owner'], repo_name=self.git_info['repo'])
                 cloned, num_commits, head_commit_hash = git_service.clone_repo(repo_path=self.project_path, branch=self.git_info['branch'])
                 if not cloned:
-                    Printer.error(f'Failed to clone {self.project_name}. Skipping...', bold=True)
+                    Printer.error(f'Failed to clone {self.project_name}. Skipping...', bold=True, num_indentations=1)
                     return
                 
-                Printer.success(f'{self.project_name} cloned successfully.', bold=True)
+                Printer.success(f'{self.project_name} cloned successfully.', bold=True, num_indentations=1)
                 
                 # Update the project information in the database
                 self.db_service.update_project(project_name=self.project_name,
@@ -63,9 +63,10 @@ class Pipeline:
             pcm = ProjectChangeMiner(project_name=self.project_name, 
                                     project_path=self.project_path, 
                                     project_branch=self.git_info['branch'],
+                                    custom_benchmark=self.custom_benchmark,
                                     use_llm=self.use_llm,
                                     printer_indent=1)
-            num_mined_commits = pcm.mine(force=False)
+            num_mined_commits = pcm.mine(force=False, max_commits=100)
 
             # Step 3: Mine benchmark presence
             Printer.separator()
@@ -73,6 +74,7 @@ class Pipeline:
             bpm = BenchmarkPresenceMiner(project_name=self.project_name,
                                         project_path=self.project_path,
                                         project_branch=self.git_info['branch'],
+                                        custom_benchmark=self.custom_benchmark,
                                         check_root_pom=True,
                                         printer_indent=1)
             num_commits_with_benchmark = bpm.mine()
@@ -138,7 +140,7 @@ class Pipeline:
                                                         previous_commit_hash=candidate_commit['previous_commit'],
                                                         changed_methods={commit_hash: [m for method_ in files.values() for m in method_] for commit_hash, files in candidate_commit['method_changes'].items()},
                                                         target_package=self.target_package,
-                                                        custom_commands=self.custom_commands,
+                                                        custom_benchmark=self.custom_benchmark,
                                                         java_version=candidate_commit['java_version'])
 
             # If the benchmark was executed successfully, save the performance data

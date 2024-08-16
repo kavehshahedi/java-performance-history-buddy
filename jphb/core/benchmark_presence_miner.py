@@ -1,7 +1,6 @@
+from typing import Optional
 from git import Repo, Commit, Tree
 import os
-import re
-import xml.etree.ElementTree as ET
 
 from jphb.utils.file_utils import FileUtils
 from jphb.utils.printer import Printer
@@ -14,10 +13,12 @@ class BenchmarkPresenceMiner:
     def __init__(self, project_name: str,
                  project_path: str,
                  project_branch: str,
+                 custom_benchmark: Optional[dict] = None,
                  **kwargs) -> None:
         self.project_name = project_name
         self.project_path = project_path
         self.project_branch = project_branch
+        self.custom_benchmark = custom_benchmark
 
         self.printer_indent = kwargs.get('printer_indent', 0)
         self.check_root_pom = kwargs.get('check_root_pom', False)
@@ -40,28 +41,34 @@ class BenchmarkPresenceMiner:
         benchmark_directory = ''
         benchmark_name = ''
 
-        # Get all the pom.xml files in the project (including the ones in the subdirectories)
-        blobs = self.__list_blobs(commit.tree)
-        for blob in blobs:
-            if 'pom.xml' in blob.path:
-                # Read the content of the pom.xml file
-                pom_content = blob.data_stream.read().decode('utf-8')
+        if not self.custom_benchmark:
+            # Get all the pom.xml files in the project (including the ones in the subdirectories)
+            blobs = self.__list_blobs(commit.tree)
+            for blob in blobs:
+                if 'pom.xml' in blob.path:
+                    # Read the content of the pom.xml file
+                    pom_content = blob.data_stream.read().decode('utf-8')
 
-                # Check whether the pom.xml file contains a dependency to JMH
-                if 'jmh-core' in pom_content:
-                    # Check if it isn't the main pom.xml file that is in the root directory of the project
-                    # We should check the blob path to make sure that the pom.xml file is not in the root directory
-                    if blob.path == 'pom.xml' and not self.check_root_pom:
-                        continue
+                    # Check whether the pom.xml file contains a dependency to JMH
+                    if 'jmh-core' in pom_content:
+                        # Check if it isn't the main pom.xml file that is in the root directory of the project
+                        # We should check the blob path to make sure that the pom.xml file is not in the root directory
+                        if blob.path == 'pom.xml' and not self.check_root_pom:
+                            continue
 
-                    there_is_dependency = True
-                    benchmark_directory = os.path.dirname(blob.path)
+                        there_is_dependency = True
+                        benchmark_directory = os.path.dirname(blob.path)
 
-                    # Extract the benchmark name from the pom.xml file
-                    pom_service = PomService(pom_content)
-                    benchmark_name = pom_service.get_jar_name()
+                        # Extract the benchmark name from the pom.xml file
+                        pom_service = PomService(pom_content)
+                        benchmark_name = pom_service.get_jar_name()
 
-                    break
+                        break
+        else:
+            benchmark_directory = self.custom_benchmark['directory']
+            pom_service = PomService(os.path.join(self.project_path, benchmark_directory, 'pom.xml'))
+            benchmark_name = pom_service.get_jar_name()
+            there_is_dependency = True
 
         return there_is_dependency, benchmark_directory, benchmark_name
 
@@ -72,12 +79,17 @@ class BenchmarkPresenceMiner:
         counter = 0
         for commit in commits[:]:
             commit_folder = os.path.join('results', self.project_name, 'commits', commit.hexsha)
+            benchmark_file_path = os.path.join(commit_folder, 'jmh_dependency.json')
+            # Check if the commit has already been mined
+            if FileUtils.is_path_exists(benchmark_file_path):
+                counter += 1
+                continue
 
             there_is_dependency, benchmark_directory, benchmark_name = self.get_benchmarks_info(commit)
 
             if there_is_dependency:
                 # Create an info file to indicate that the commit contains a dependency to JMH
-                FileUtils.write_json_file(os.path.join(commit_folder, 'jmh_dependency.json'), 
+                FileUtils.write_json_file(benchmark_file_path, 
                                           {'benchmark_directory': benchmark_directory, 'benchmark_name': benchmark_name})
 
                 counter += 1

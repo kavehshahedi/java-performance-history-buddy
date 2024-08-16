@@ -44,6 +44,8 @@ class PomService:
                     if prop_value is not None:
                         prop_value = self.__resolve_property(str(prop_value.text))
                         value = value[:start_index] + prop_value + value[end_index+1:]
+                    else:
+                        break
             else:
                 break
         return value
