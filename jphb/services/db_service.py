@@ -14,7 +14,11 @@ class DBService:
     """
 
     def __init__(self, db_name: str = os.getenv('DB_NAME', 'jphb'),
-                    db_url: str = os.getenv('DB_URL', 'localhost:27017')) -> None:
+                    db_url: str = os.getenv('DB_URL', 'localhost:27017'),
+                    use_cloud_db: bool = False) -> None:
+        if use_cloud_db:
+            db_url = os.getenv('CLOUD_DB_URL', db_url)
+ 
         self.client = MongoClient(db_url)
         self.db = self.client[db_name]
 

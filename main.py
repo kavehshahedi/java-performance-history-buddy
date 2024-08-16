@@ -18,6 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('--kernel', action='store_true', help='Enable kernel tracing', default=False)
     parser.add_argument('--llm', action='store_true', help='Enable using LLM to aid method changes', default=False)
     parser.add_argument('--email', action='store_true', help='Enable email notifications', default=False)
+    parser.add_argument('--cloud-db', action='store_true', help='Enable cloud database', default=False)
     args = parser.parse_args()
 
     project = None
@@ -33,5 +34,6 @@ if __name__ == '__main__':
                         base_project_path=BASE_PROJECT_PATH,
                         use_lttng=args.kernel,
                         use_llm=args.llm,
-                        use_email_notification=args.email)
+                        use_email_notification=args.email,
+                        use_cloud_db=args.cloud_db)
     pipeline.run()

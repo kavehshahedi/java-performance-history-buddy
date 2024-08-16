@@ -21,7 +21,8 @@ class Pipeline:
                  base_project_path: str,
                  use_lttng: bool = False,
                  use_llm: bool = False,
-                 use_email_notification: bool = False) -> None:
+                 use_email_notification: bool = False,
+                 use_cloud_db: bool = False) -> None:
         self.project_name = project['name']
         self.project_path = os.path.join(base_project_path, self.project_name)
         self.target_package = project['target_package']
@@ -36,7 +37,7 @@ class Pipeline:
         self.use_llm = use_llm
         self.use_email_notification = use_email_notification
 
-        self.db_service = DBService()
+        self.db_service = DBService(use_cloud_db=use_cloud_db)
 
     def run(self) -> None:
         # First we check if the candidate commits have already been selected
