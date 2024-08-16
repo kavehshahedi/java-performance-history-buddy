@@ -63,5 +63,8 @@ COPY --from=jdk21 /usr/local/openjdk-21 /usr/lib/jvm/java-21-openjdk-amd64
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH="$JAVA_HOME/bin:/usr/local/bin:${PATH}"
 
+# Copy the toolchains.xml file to the container
+COPY toolchains.xml /root/.m2/toolchains.xml
+
 # Run main.py when the container launches
 ENTRYPOINT ["python", "main.py"]
