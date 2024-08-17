@@ -431,7 +431,7 @@ class BenchmarkExecutor:
             for root, _, files in os.walk(os.path.join(self.project_path, benchmark_directory)):
                 for file in files:
                     if file.endswith('.jar'):
-                        if any(substring in file.lower() for substring in ('shade', 'original', 'source', 'sources', 'javadoc', 'tests', 'test', 'snapshot')):
+                        if any(substring in file.lower() for substring in ('shade', 'original', 'source', 'sources', 'javadoc', 'tests', 'test')):
                             continue
                         candidate_jars.append(os.path.join(root, file))
 

@@ -171,13 +171,13 @@ class ProjectChangeMiner:
                 }
 
                 try:
-                    new_file = repo.git.show(f'{commit.hexsha}:{file}')
+                    new_file = str(repo.git.show(f'{commit.hexsha}:{file}')).encode('utf-8', errors='ignore').decode('utf-8')
 
                     if file in deleted_mapped_files:
                         old_file_name = deleted_mapped_files[file]
                     else:
                         old_file_name = file
-                    old_file = repo.git.show(f'{previous_commit.hexsha}:{old_file_name}')
+                    old_file = str(repo.git.show(f'{previous_commit.hexsha}:{old_file_name}')).encode('utf-8', errors='ignore').decode('utf-8')
                 except:
                     self.__write_error(commit_folder, 'git show', commit.hexsha, 'None', [])
                     Printer.error(f'Error in commit {commit.hexsha}', num_indentations=self.printer_indent)

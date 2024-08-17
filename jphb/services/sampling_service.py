@@ -7,6 +7,9 @@ class Sampling:
         self.data = data
 
     def __calculate_sample_size(self, confidence_level: float, margin_of_error: float, population_size: int) -> int:
+        if population_size == 0:
+            return 0
+        
         Z = 1.96  # Z-score for 95% confidence
         p = 0.5   # Proportion (maximum variability)
         E = margin_of_error
@@ -22,6 +25,9 @@ class Sampling:
         confidence_level = 0.95
         margin_of_error = 0.05
         sample_size = self.__calculate_sample_size(confidence_level, margin_of_error, N)
+
+        if sample_size == 0:
+            return 0, 0, 0, 0
 
         # Systematic sampling
         k = N // sample_size

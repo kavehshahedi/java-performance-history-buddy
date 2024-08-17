@@ -30,5 +30,4 @@ class EmailService:
             server.quit()
             return True
         except Exception as e:
-            print(e)
             return False

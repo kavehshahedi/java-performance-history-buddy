@@ -128,9 +128,118 @@
         "target_package": "net.openhft"
     },
     {
+        "git": {
+            "owner": "zalando",
+            "repo": "logbook",
+            "branch": "main"
+        },
+        "name": "logbook",
+        "path": "logbook",
+        "target_package": "org.zalando.logbook"
+    },
+    {
+        "git": {
+            "owner": "alibaba",
+            "repo": "fastjson2",
+            "branch": "main"
+        },
+        "name": "fastjson2",
+        "path": "fastjson2",
+        "target_package": "com.alibaba.fastjson2",
+        "custom_benchmark": {
+            "directory": "benchmark"
+        }
+    },
+    {
+        "git": {
+            "owner": "apache",
+            "repo": "logging-log4j2",
+            "branch": "2.x"
+        },
         "name": "log4j2",
-        "branch": "2.x",
-        "path": "log4j2"
+        "path": "log4j2",
+        "target_package": "org.apache.logging.log4j",
+        "custom_benchmark": {
+            "directory": "log4j-perf-test",
+            "module": "log4j-perf-test"
+        }
+    },
+    {
+        "git": {
+            "owner": "cantaloupe-project",
+            "repo": "cantaloupe",
+            "branch": "develop"
+        },
+        "name": "cantaloupe",
+        "path": "cantaloupe",
+        "target_package": "edu.illinois.library.cantaloupe",
+        "custom_benchmark": {
+            "directory": "",
+            "module": "cantaloupe-benchmark",
+            "profile": "-Pbenchmark"
+        }
+    },
+    {
+        "git": {
+            "owner": "jdbi",
+            "repo": "jdbi",
+            "branch": "master"
+        },
+        "name": "jdbi",
+        "path": "jdbi",
+        "target_package": "org.jdbi",
+        "custom_benchmark": {
+            "directory": "benchmark",
+            "module": "benchmark"
+        }
+    },
+    {
+        "git": {
+            "owner": "jooby-project",
+            "repo": "jooby",
+            "branch": "3.x"
+        },
+        "name": "jooby",
+        "path": "jooby",
+        "target_package": "io.jooby"
+    },
+    {
+        "git": {
+            "owner": "OpenFeign",
+            "repo": "feign",
+            "branch": "master"
+        },
+        "name": "feign",
+        "path": "feign",
+        "target_package": "feign",
+        "custom_benchmark": {
+            "directory": "benchmark",
+            "module": "benchmark"
+        }
+    },
+    {
+        "git": {
+            "owner": "panda-lang",
+            "repo": "panda",
+            "branch": "master"
+        },
+        "name": "panda",
+        "path": "panda",
+        "target_package": "panda"
+    },
+    {
+        "git": {
+            "owner": "protostuff",
+            "repo": "protostuff",
+            "branch": "master"
+        },
+        "name": "protostuff",
+        "path": "protostuff",
+        "target_package": "io.protostuff",
+        "custom_benchmark": {
+            "directory": "protostuff-benchmarks",
+            "module": "protostuff-benchmarks"
+        }
     },
     {
         "name": "hadoop",

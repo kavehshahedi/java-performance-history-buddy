@@ -111,7 +111,7 @@ class JavaService:
                 method_body = method_body.lower().strip()
 
                 method_signature = f'{method_name}{method_body}'
-                method_hash = hashlib.md5(method_signature.encode()).hexdigest()
+                method_hash = hashlib.md5(method_signature.encode('utf-8', errors='ignore')).hexdigest()
                 method_hashes[method_name] = method_hash
         
         return method_hashes
