@@ -1,4 +1,5 @@
 import os
+import tempfile
 from typing import Optional
 from git import Repo, Commit, NULL_TREE
 
@@ -160,9 +161,11 @@ class ProjectChangeMiner:
                     changed_files = [file for file in changed_files if file != f_name]
 
             # Check which files have been newly added in the new commit that were not in the previous commit entirely (i.e., not refactored)
-            for file_ in changed_files:
+            new_file_indexes = []
+            for file_index, file_ in enumerate(changed_files):
                 if self.__is_file_new_in_commit(commit=commit, parent=previous_commit, file_path=str(file_)):
-                    changed_files.remove(file_)
+                    new_file_indexes.append(file_index)
+            changed_files = [file for i, file in enumerate(changed_files) if i not in new_file_indexes]
 
             method_changes = {}
             # Iterate over all changed .java files
@@ -191,7 +194,6 @@ class ProjectChangeMiner:
                 old_file = srcml_service.remove_comments(old_file)
 
                 # Save both files in temporary files
-                import tempfile
                 new_file_path = tempfile.NamedTemporaryFile(delete=True, mode='w', suffix='.java')
                 old_file_path = tempfile.NamedTemporaryFile(delete=True, mode='w', suffix='.java')
                 
