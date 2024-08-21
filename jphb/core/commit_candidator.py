@@ -85,6 +85,13 @@ class CommitCandidator:
             # prev_release_commit_hash, next_release_commit_hash = git_service.find_surrounding_releases(repo=repo, commit_hash=commit_hash)
             prev_release_commit_hash, next_release_commit_hash = commit_hash, commit_hash
 
+            # Count number of changes
+            num_changes = 0
+            for c, changes in method_changes.items():
+                if c == commit_hash:
+                    for f, m in changes.items():
+                        num_changes += len(m)
+
             # Add the commit to the list of candidate commits
             self.candidate_commits.append({
                 'commit': commit_hash,
@@ -103,11 +110,16 @@ class CommitCandidator:
                 'java_version': {
                     'version': java_version,
                     'should_update_pom': should_update_pom
-                }
+                },
+                'num_changes': num_changes
             })
 
         # Sort the candidate commits by their date
-        self.candidate_commits = sorted(self.candidate_commits, key=lambda x: x['date'], reverse=True)
+        self.candidate_commits = sorted(self.candidate_commits, key=lambda x: x['num_changes'], reverse=True)
+
+        # Remove num_changes from the candidate commits
+        for commit in self.candidate_commits:
+            commit.pop('num_changes')
 
         Printer.success(f'Project {self.project_name} has {len(self.candidate_commits)} candidate commits', num_indentations=self.printer_indent)
 
