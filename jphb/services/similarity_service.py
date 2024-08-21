@@ -24,6 +24,12 @@ class SimilarityService:
             2. We use the cosine similarity to compare the two methods.
             3. We use Jacard similarity to compare the two methods.
         """
+        if not self.first_code_tokens or not self.second_code_tokens:
+            return False
+        
+        if len(self.first_code_tokens) == 0 or len(self.second_code_tokens) == 0:
+            return False
+
         difflib_similarity = self.__get_difflib_similarity()
         cosine_similarity = self.__get_cosine_similarity()
         jaccard_similarity = self.__get_jaccard_similarity()
