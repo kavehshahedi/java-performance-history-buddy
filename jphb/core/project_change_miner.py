@@ -129,7 +129,9 @@ class ProjectChangeMiner:
                                                           self.project_path,
                                                           self.project_branch,
                                                           custom_benchmark=self.custom_benchmark)
-            there_is_dependency, benchmark_directory, _ = bench_presence_miner.get_benchmarks_info(commit)
+            there_is_dependency, benchmark_directory, _ = bench_presence_miner.get_benchmarks_info(repo=repo,
+                                                                                                    commit=commit,
+                                                                                                    checkout=False)
             if there_is_dependency:
                 changed_files = [file for file in changed_files if not str(file).startswith(benchmark_directory)]
 
@@ -188,12 +190,27 @@ class ProjectChangeMiner:
                 new_file = srcml_service.remove_comments(new_file)
                 old_file = srcml_service.remove_comments(old_file)
 
+                # Save both files in temporary files
+                import tempfile
+                new_file_path = tempfile.NamedTemporaryFile(delete=True, mode='w', suffix='.java')
+                old_file_path = tempfile.NamedTemporaryFile(delete=True, mode='w', suffix='.java')
+                
+                new_file_path.write(new_file)
+                new_file_path.seek(0)
+
+                old_file_path.write(old_file)
+                old_file_path.seek(0)
+
                 java_service = JavaService()
-                different_methods = java_service.get_different_methods(new_file, old_file)
+                different_methods = java_service.get_different_methods(new_file_path.name, old_file_path.name)
                 if different_methods is None:
                     self.__write_error(commit_folder, 'get_different_methods', commit.hexsha, previous_commit.hexsha, [])
                     Printer.error(f'Error in commit {commit.hexsha}', num_indentations=self.printer_indent)
                     continue
+
+                # Close and delete the temporary files
+                new_file_path.close()
+                old_file_path.close()
                 
                 # NOTE: Temporary
                 # Remove the methods that 'second' is null (i.e., the methods that are newly introduced in the new commit)

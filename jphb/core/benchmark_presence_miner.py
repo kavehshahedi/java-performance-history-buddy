@@ -36,7 +36,7 @@ class BenchmarkPresenceMiner:
         traverse_tree(tree)
         return blobs
 
-    def get_benchmarks_info(self, commit: Commit) -> tuple[bool, str, str]:
+    def get_benchmarks_info(self, repo: Repo, commit: Commit, checkout: bool = True) -> tuple[bool, str, str]:
         there_is_dependency = False
         benchmark_directory = ''
         benchmark_name = ''
@@ -65,8 +65,14 @@ class BenchmarkPresenceMiner:
 
                         break
         else:
+            if checkout:
+                repo.git.checkout(commit.hexsha)
             benchmark_directory = self.custom_benchmark['directory']
-            pom_service = PomService(os.path.join(self.project_path, benchmark_directory, 'pom.xml'))
+            pom_path = os.path.join(self.project_path, benchmark_directory, 'pom.xml')
+            if not FileUtils.is_path_exists(pom_path):
+                return there_is_dependency, benchmark_directory, benchmark_name
+            
+            pom_service = PomService(pom_path)
             benchmark_name = pom_service.get_jar_name()
             there_is_dependency = True
 
@@ -74,26 +80,32 @@ class BenchmarkPresenceMiner:
 
     def mine(self) -> int:
         repo = Repo(self.project_path)
-        commits = list(repo.iter_commits(self.project_branch))
 
         counter = 0
-        for commit in commits[:]:
+        total_commits = sum(1 for _ in repo.iter_commits(self.project_branch))
+        for commit_index, commit in enumerate(repo.iter_commits(self.project_branch), start=1):
             commit_folder = os.path.join('results', self.project_name, 'commits', commit.hexsha)
             benchmark_file_path = os.path.join(commit_folder, 'jmh_dependency.json')
             # Check if the commit has already been mined
             if FileUtils.is_path_exists(benchmark_file_path):
+                Printer.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} has already been cheched', num_indentations=self.printer_indent)
                 counter += 1
                 continue
 
-            there_is_dependency, benchmark_directory, benchmark_name = self.get_benchmarks_info(commit)
+            there_is_dependency, benchmark_directory, benchmark_name = self.get_benchmarks_info(repo, commit)
 
             if there_is_dependency:
+                Printer.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} contains a dependency to JMH', num_indentations=self.printer_indent)
+
                 # Create an info file to indicate that the commit contains a dependency to JMH
                 FileUtils.write_json_file(benchmark_file_path, 
                                           {'benchmark_directory': benchmark_directory, 'benchmark_name': benchmark_name})
 
                 counter += 1
+            else:
+                Printer.warning(f'({commit_index}/{total_commits}) Commit {commit.hexsha} does not contain a dependency to JMH', num_indentations=self.printer_indent)
 
-        Printer.success(f'Project {self.project_name} has {counter} commits out of {len(commits)} that contain a dependency to JMH', num_indentations=self.printer_indent)
+        Printer.separator(num_indentations=self.printer_indent)
+        Printer.info(f'Project {self.project_name} has {counter} commits out of {total_commits} that contain a dependency to JMH', num_indentations=self.printer_indent, bold=True)
 
         return counter

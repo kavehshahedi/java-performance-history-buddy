@@ -59,7 +59,10 @@ class CommitCandidator:
             # Find the Java version used in the commit
             repo = Repo(self.project_path)
             repo.git.checkout(commit_hash, force=True)
-            pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
+            pom_path = os.path.join(self.project_path, 'pom.xml')
+            if not FileUtils.is_path_exists(pom_path):
+                continue
+            pom_service = PomService(pom_source=pom_path)
             java_version = pom_service.get_java_version()
             if java_version is None:
                 # Currently, if the java version is not found in the pom.xml file, we will assume it is Java 8
