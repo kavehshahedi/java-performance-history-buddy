@@ -35,7 +35,9 @@ class Pipeline:
 
         self.use_lttng = use_lttng
         self.use_llm = use_llm
-        self.use_email_notification = use_email_notification
+
+        if use_email_notification:
+            self.email_service = EmailService(project_name=self.project_name)
 
         self.db_service = DBService(use_cloud_db=use_cloud_db)
 
@@ -179,9 +181,8 @@ class Pipeline:
                                        sampled_count=sampled_count)
         
         # Send an email notification (if enabled)
-        if self.use_email_notification:
-            email_service = EmailService()
-            email_service.send_email(to_email=os.getenv('SMTP_TO_EMAIL', 'INVALID_EMAIL'),
+        if self.email_service:
+            self.email_service.send_email(to_email=os.getenv('SMTP_TO_EMAIL', 'INVALID_EMAIL'),
                                     subject=f'JPHB Pipeline - {self.project_name} (Completed)',
                                     message=f"""The JPHB pipeline for {self.project_name} has been completed successfully.
                                     \nSample Size: {sample_size}
