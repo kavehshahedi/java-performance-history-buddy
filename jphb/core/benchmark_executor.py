@@ -171,10 +171,22 @@ class BenchmarkExecutor:
             self.__replace_benchmarks(from_commit_hash=commit_to_use_for_benchmark,
                                       to_commit_hash=current_commit_hash,
                                       benchmark_directory=self.project_benchmark_directory)
-            status = self.__build_benchmarks(benchmark_directory=self.project_benchmark_directory,
-                                             benchmark_commit_hash=current_commit_hash,
-                                             build_anyway=True, # Since we need to run the benchmarks, we build them anyway
-                                             java_version=self.java_version)            
+
+            if self.project_benchmark_module:
+                status = self.__build_benchmarks_with_module(module=self.project_benchmark_module,
+                                                                            benchmark_commit_hash=current_commit_hash,
+                                                                            build_anyway=True,
+                                                                            java_version=self.java_version)
+            else: 
+                # NOTE: Check if the project should be built again 
+                # self.__build_project(commit_hash=current_commit_hash,
+                #                     build_anyway=True,
+                #                     java_version=self.java_version)
+                status = self.__build_benchmarks(benchmark_directory=self.project_benchmark_directory,
+                                        benchmark_commit_hash=current_commit_hash,
+                                        build_anyway=True,
+                                        java_version=self.java_version)
+                                
             if not status:
                 Printer.error(f'Benchmarks are not compatible with the other commit', num_indentations=self.printer_indent+1)
                 return False, None
