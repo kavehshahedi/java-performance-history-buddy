@@ -88,7 +88,7 @@ class BenchmarkPresenceMiner:
             benchmark_file_path = os.path.join(commit_folder, 'jmh_dependency.json')
             # Check if the commit has already been mined
             if FileUtils.is_path_exists(benchmark_file_path):
-                Printer.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} has already been cheched', num_indentations=self.printer_indent)
+                Printer.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} has already been checked', num_indentations=self.printer_indent)
                 counter += 1
                 continue
 

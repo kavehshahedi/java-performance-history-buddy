@@ -64,7 +64,9 @@ ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH="$JAVA_HOME/bin:/usr/local/bin:${PATH}"
 
 # Copy the toolchains.xml file to the container
+# It should be both for root and the user
 COPY toolchains.xml /root/.m2/toolchains.xml
+COPY toolchains.xml /home/kavehshahedi/.m2/toolchains.xml
 
 # Run main.py when the container launches
 ENTRYPOINT ["python", "main.py"]
