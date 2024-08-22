@@ -1,5 +1,5 @@
 from types import NoneType
-from typing import Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 from git import Repo
 import os
 import shutil
@@ -220,12 +220,12 @@ class BenchmarkExecutor:
         target_methods = []
         if not has_benchmark_executed:
             for i, benchmark_name in enumerate(list_of_benchmarks):
-                tm = self.__get_target_methods(project_package=target_package,
+                results = self.__get_target_methods(project_package=target_package,
                                                java_version=self.java_version,
                                                commit_hash=commit.hexsha,
                                                benchmark_jar_path=benchmark_jar_path,
-                                               benchmark_name=benchmark_name)
-                if not tm:
+                                               benchmark_name=benchmark_name)                       
+                if not results:
                     Logger.error(f'({i+1}/{len(list_of_benchmarks)}) Can\'t get target methods for {benchmark_name}', num_indentations=self.printer_indent+1)
                     continue
 
@@ -233,7 +233,8 @@ class BenchmarkExecutor:
 
                 target_methods.append({
                     'benchmark': benchmark_name,
-                    'methods': tm
+                    'methods': results['methods'],
+                    'duration': results['duration']
                 })
 
             self.__save_benchmark_history(target_methods=target_methods,
@@ -244,17 +245,21 @@ class BenchmarkExecutor:
 
         # Check if the benchmarks are targeting the changed methods
         Logger.info('Checking if benchmark is targeting changed methods...', num_indentations=self.printer_indent)
-        chosen_benchmarks:dict[str, dict[str, list[str]]] = {}
+        chosen_benchmarks:dict[str, dict[str, dict[str, Any]]] = {}
         for tm in target_methods:
             tm_benchmark = tm['benchmark']
             tm_methods = tm['methods']
+            tm_duration = tm['duration']
 
             is_targeting, targets = self.__is_benchmark_targeting_changed_methods(changed_methods=changed_methods,
                                                                                   target_methods=tm_methods)
             
             # If the benchmark is targeting the changed methods, add it to the chosen benchmarks for running
             if is_targeting:
-                chosen_benchmarks[tm_benchmark] = targets
+                chosen_benchmarks[tm_benchmark] = {
+                    'targets': targets,
+                    'duration': tm_duration
+                }
 
         # If no benchmarks are targeting the changed methods, return (i.e., skip the commit)
         if not chosen_benchmarks:
@@ -270,19 +275,20 @@ class BenchmarkExecutor:
             config_directory = os.path.join('results', self.project_name, 'commits', commit.hexsha, 'execution', commit_hash_)
             FileUtils.create_directory(config_directory, remove_contents=True)
 
-            for benchmark, methods in chosen_benchmarks_.items():
-                Logger.success(f'Benchmark {benchmark} is targeting {len(methods)} methods', num_indentations=self.printer_indent+1)
+            for bench_name, bench_info in chosen_benchmarks_.items():
+                methods = bench_info['targets']
+                Logger.success(f'Benchmark {bench_name} is targeting {len(methods)} methods', num_indentations=self.printer_indent+1)
 
                 # Create the YAML file
                 YamlCreator().create_yaml(
-                    log_file=os.path.join(config_directory, 'ust', f'{benchmark}.log'),
+                    log_file=os.path.join(config_directory, 'ust', f'{bench_name}.log'),
                     target_package=target_package,
                     instrument=methods,
                     ignore=[],
                     instrument_main_method=False,
                     add_timestamp_to_file_names=True,
                     use_hash=True,
-                    yaml_file=os.path.join(config_directory, f'{benchmark}.yaml')
+                    yaml_file=os.path.join(config_directory, f'{bench_name}.yaml')
                 )
 
             # Run the benchmarks
@@ -528,7 +534,7 @@ class BenchmarkExecutor:
                              java_version: str,
                              commit_hash: str,
                              benchmark_jar_path: str,
-                             benchmark_name: str) -> Union[NoneType, list[str]]:
+                             benchmark_name: str) -> Union[NoneType, dict[str, Any]]:
         log_path = os.path.join('results', self.project_name, 'commits', commit_hash, 'visited', f'{benchmark_name}.log')
         config_path = os.path.join('results', self.project_name, 'commits', commit_hash, 'visited', f'{benchmark_name}.yaml')
         
@@ -566,7 +572,9 @@ class BenchmarkExecutor:
         ]
         
         try:
+            start_time = time.time()
             process = subprocess.run(command, capture_output=True, shell=False, env=env, timeout=60)
+            duration = time.time() - start_time
 
             if process.returncode != 0:
                 return None
@@ -580,7 +588,10 @@ class BenchmarkExecutor:
             target_methods.add(
                 ' '.join(line.strip().split(' ')[2:]).split('(')[0].strip())
 
-        return list(target_methods)
+        return {
+            'methods': list(target_methods),
+            'duration': duration
+        }
 
     def __is_benchmark_targeting_changed_methods(self, changed_methods: dict[str, list[str]], # The list of changed methods in the commit
                                                  target_methods: list[str] # The list of methods that the benchmark executes
@@ -606,41 +617,64 @@ class BenchmarkExecutor:
 
         return len(list(chosen_methods.values())[0]) > 0, chosen_methods
 
-    def __minimize_and_distribute_methods(self, benchmarks: dict[str, dict[str, list[str]]]) -> dict[str, dict[str, list[str]]]:
-        # Create a set of all methods to be covered
-        all_methods = set()
-        for method_dict in benchmarks.values():
-            for methods in method_dict.values():
-                all_methods.update(methods)
+    def __minimize_and_distribute_methods(self, benchmarks: dict[str, dict[str, dict[str, Any]]]) -> dict[str, dict[str, dict[str, list[str]]]]:
+        # Create a set of all methods to be covered for each commit ID
+        all_methods = {}
+        for benchmark_info in benchmarks.values():
+            for commit_id, methods in benchmark_info['targets'].items():
+                if commit_id not in all_methods:
+                    all_methods[commit_id] = set()
+                all_methods[commit_id].update(methods)
 
-        # Create a list of benchmarks sorted by the number of unique methods they cover in descending order
+        # Create a list of benchmarks sorted by the number of unique methods they cover, then by duration
         sorted_benchmarks = sorted(
-            ((benchmark, {method_id: methods for method_id, methods in method_dict.items()})
-            for benchmark, method_dict in benchmarks.items()),
-            key=lambda x: len({method for methods in x[1].values() for method in methods}),
-            reverse=True
+            (
+                benchmark, 
+                benchmark_info['targets'], 
+                benchmark_info['duration']
+            )
+            for benchmark, benchmark_info in benchmarks.items()
         )
 
         selected_benchmarks = {}
-        covered_methods = set()
+        covered_methods = {commit_id: set() for commit_id in all_methods}
 
         # Select benchmarks iteratively
-        while covered_methods != all_methods:
-            for benchmark, method_dict in sorted_benchmarks:
-                # Calculate the new methods this benchmark will cover
-                new_methods = {method for methods in method_dict.values() for method in methods} - covered_methods
-                if new_methods:
-                    # Assign new methods to their respective commit hashes in the selected benchmarks
-                    for method_id, methods in method_dict.items():
-                        if any(method in new_methods for method in methods):
-                            if method_id not in selected_benchmarks:
-                                selected_benchmarks[method_id] = {}
-                            if benchmark not in selected_benchmarks[method_id]:
-                                selected_benchmarks[method_id][benchmark] = []
-                            selected_benchmarks[method_id][benchmark].extend(
-                                method for method in methods if method in new_methods
-                            )
-                    covered_methods.update(new_methods)
+        while any(covered_methods[commit_id] != all_methods[commit_id] for commit_id in all_methods):
+            # Sort benchmarks by maximum new methods covered first, then by duration
+            sorted_benchmarks = sorted(
+                sorted_benchmarks,
+                key=lambda x: (
+                    -sum(len(set(methods) - covered_methods[commit_id]) for commit_id, methods in x[1].items()),
+                    x[2]
+                )
+            )
+            
+            for benchmark, targets, duration in sorted_benchmarks:
+                added_to_selected = False
+
+                for commit_id, methods in targets.items():
+                    new_methods = set(methods) - covered_methods[commit_id]
+
+                    if new_methods:
+                        if commit_id not in selected_benchmarks:
+                            selected_benchmarks[commit_id] = {
+                                benchmark: {
+                                    "targets": [],
+                                    "duration": duration
+                                }
+                            }
+                        elif benchmark not in selected_benchmarks[commit_id]:
+                            selected_benchmarks[commit_id][benchmark] = {
+                                "targets": [],
+                                "duration": duration
+                            }
+                        
+                        selected_benchmarks[commit_id][benchmark]["targets"].extend(new_methods)
+                        covered_methods[commit_id].update(new_methods)
+                        added_to_selected = True
+
+                if added_to_selected:
                     # Remove the selected benchmark from the list
                     sorted_benchmarks = [b for b in sorted_benchmarks if b[0] != benchmark]
                     break
