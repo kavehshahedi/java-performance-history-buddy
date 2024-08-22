@@ -571,15 +571,16 @@ class BenchmarkExecutor:
             benchmark_name
         ]
         
+        start_time = time.time()
         try:
             start_time = time.time()
             process = subprocess.run(command, capture_output=True, shell=False, env=env, timeout=60)
-            duration = time.time() - start_time
 
             if process.returncode != 0:
                 return None
         except subprocess.TimeoutExpired:
             pass
+        duration = time.time() - start_time
 
         target_methods = set()
 
