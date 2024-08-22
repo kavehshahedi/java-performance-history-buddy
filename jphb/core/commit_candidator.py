@@ -4,7 +4,7 @@ import time
 from git import Repo
 
 from jphb.utils.file_utils import FileUtils
-from jphb.utils.printer import Printer
+from jphb.utils.Logger import Logger
 
 from jphb.services.git_service import GitService
 from jphb.services.pom_service import PomService
@@ -121,7 +121,7 @@ class CommitCandidator:
         for commit in self.candidate_commits:
             commit.pop('num_changes')
 
-        Printer.success(f'Project {self.project_name} has {len(self.candidate_commits)} candidate commits', num_indentations=self.printer_indent)
+        Logger.success(f'Project {self.project_name} has {len(self.candidate_commits)} candidate commits', num_indentations=self.printer_indent)
 
         # Save the candidate commits to a JSON file
         if save_to_file:

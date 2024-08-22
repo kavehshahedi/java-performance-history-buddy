@@ -3,7 +3,7 @@ from git import Repo, Commit, Tree
 import os
 
 from jphb.utils.file_utils import FileUtils
-from jphb.utils.printer import Printer
+from jphb.utils.Logger import Logger
 
 from jphb.services.pom_service import PomService
 
@@ -88,14 +88,14 @@ class BenchmarkPresenceMiner:
             benchmark_file_path = os.path.join(commit_folder, 'jmh_dependency.json')
             # Check if the commit has already been mined
             if FileUtils.is_path_exists(benchmark_file_path):
-                Printer.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} has already been checked', num_indentations=self.printer_indent)
+                Logger.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} has already been checked', num_indentations=self.printer_indent)
                 counter += 1
                 continue
 
             there_is_dependency, benchmark_directory, benchmark_name = self.get_benchmarks_info(repo, commit)
 
             if there_is_dependency:
-                Printer.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} contains a dependency to JMH', num_indentations=self.printer_indent)
+                Logger.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} contains a dependency to JMH', num_indentations=self.printer_indent)
 
                 # Create an info file to indicate that the commit contains a dependency to JMH
                 FileUtils.write_json_file(benchmark_file_path, 
@@ -103,9 +103,9 @@ class BenchmarkPresenceMiner:
 
                 counter += 1
             else:
-                Printer.warning(f'({commit_index}/{total_commits}) Commit {commit.hexsha} does not contain a dependency to JMH', num_indentations=self.printer_indent)
+                Logger.warning(f'({commit_index}/{total_commits}) Commit {commit.hexsha} does not contain a dependency to JMH', num_indentations=self.printer_indent)
 
-        Printer.separator(num_indentations=self.printer_indent)
-        Printer.info(f'Project {self.project_name} has {counter} commits out of {total_commits} that contain a dependency to JMH', num_indentations=self.printer_indent, bold=True)
+        Logger.separator(num_indentations=self.printer_indent)
+        Logger.info(f'Project {self.project_name} has {counter} commits out of {total_commits} that contain a dependency to JMH', num_indentations=self.printer_indent, bold=True)
 
         return counter
