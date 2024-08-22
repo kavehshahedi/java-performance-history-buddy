@@ -7,6 +7,8 @@ import subprocess
 import time
 import sys
 
+import psutil
+
 from jphb.services.yaml_service import YamlCreator
 
 from jphb.services.pom_service import PomService
@@ -661,6 +663,10 @@ class BenchmarkExecutor:
             if os.path.exists(log_path):
                 os.remove(log_path)
 
+            # Remove the previous JSON file (if exists)
+            jmh_json_path = os.path.join(config_directory, 'jmh-results', f'{benchmark_name}.json')
+            FileUtils.create_directory(os.path.dirname(jmh_json_path), remove_contents=True)
+
             # Check if we need to use LTTng
             if self.use_lttng:
                 lttng_service = LTTngService(project_name=self.project_name,
@@ -670,7 +676,7 @@ class BenchmarkExecutor:
             # Run the benchmark
             mvn_service = MvnService()
             env = mvn_service.update_java_home(java_version)
-            process = subprocess.run([
+            process = subprocess.Popen([
                 'java',
                 '-Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector',
                 f'-javaagent:{self.jib_path}=config={config_path}',
@@ -679,14 +685,39 @@ class BenchmarkExecutor:
                 '-f', '3',
                 '-wi', '0',
                 '-i', '5',
+                '-rf', 'json',
+                '-rff', os.path.join(config_directory, f'{benchmark_name}.json'),
                 benchmark_name
-            ], capture_output=True, shell=False, env=env)
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, env=env)
+
+            # Monitor the process
+            usage_duration = 0
+            while process.poll() is None:
+                mem_info = psutil.virtual_memory() # memory info
+                swap_info = psutil.swap_memory() # swap memory info
+                total_available = mem_info.available + swap_info.free # total available memory = mem + swap
+                mem_usage = psutil.Process(process.pid).memory_info().rss # memory usage of the process
+                mem_usage_gb = mem_usage / 1024 / 1024 / 1024
+
+                # Check if the memory usage is too high (>95%)
+                if mem_usage > total_available * 0.95:
+                    # If the memory usage is too high for 5 seconds, terminate the process
+                    if usage_duration < 5:
+                        usage_duration += 1
+                        Printer.warning(f'Memory usage is too high: {mem_usage_gb}GB...', num_indentations=self.printer_indent+1)
+                    else:
+                        Printer.error(f'Memory usage is too high: {mem_usage_gb}GB. Terminating...', num_indentations=self.printer_indent+1)
+                        process.kill()
+                        return None
+                time.sleep(1)
 
             # Stop the LTTng tracing (if enabled)
             if self.use_lttng:
                 lttng_service.stop()
 
+            # Check if the process is successful
             if process.returncode != 0:
+                Printer.error(f'Error while running the benchmark {benchmark_name}', num_indentations=self.printer_indent+1)
                 return None
 
             # Analyze the performance
