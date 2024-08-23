@@ -36,8 +36,7 @@ class Pipeline:
         self.use_lttng = use_lttng
         self.use_llm = use_llm
 
-        if use_email_notification:
-            self.email_service = EmailService(project_name=self.project_name)
+        self.email_service = EmailService(project_name=self.project_name) if use_email_notification else None
 
         self.db_service = DBService(use_cloud_db=use_cloud_db)
 
