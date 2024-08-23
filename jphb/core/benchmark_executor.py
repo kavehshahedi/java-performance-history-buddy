@@ -101,8 +101,7 @@ class BenchmarkExecutor:
 
             # If the Java version should be updated, update the pom.xml file
             if java_version['should_update_pom']:
-                pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
-                pom_service.set_java_version(self.java_version)
+                self.__update_java_version_everywhere(self.java_version)
 
             if self.project_benchmark_module:
                 # Check whether the benchmarks are buildable
@@ -229,7 +228,7 @@ class BenchmarkExecutor:
                     Logger.error(f'({i+1}/{len(list_of_benchmarks)}) Can\'t get target methods for {benchmark_name}', num_indentations=self.printer_indent+1)
                     continue
 
-                Logger.success(f'({i+1}/{len(list_of_benchmarks)}) Got target methods for {benchmark_name}', num_indentations=self.printer_indent+1)
+                Logger.success(f'({i+1}/{len(list_of_benchmarks)}) Got target methods for {benchmark_name}. Duration: {results["duration"]}', num_indentations=self.printer_indent+1)
 
                 target_methods.append({
                     'benchmark': benchmark_name,
@@ -300,8 +299,7 @@ class BenchmarkExecutor:
 
                 # If the Java version should be updated, update the pom.xml file
                 if java_version['should_update_pom']:
-                    pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
-                    pom_service.set_java_version(self.java_version)
+                    self.__update_java_version_everywhere(self.java_version)
 
                 if not has_same_benchmarks and commit_to_use_for_benchmark != current_commit_hash:
                     Logger.info(f'Replacing the benchmarks with the other commit...', num_indentations=self.printer_indent)
@@ -560,7 +558,6 @@ class BenchmarkExecutor:
         env = mvn_service.update_java_home(java_version)
         command = [
             'java',
-            '-Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector',
             f'-javaagent:{self.jib_path}=config={config_path}',
             '-jar',
             benchmark_jar_path,
@@ -619,7 +616,10 @@ class BenchmarkExecutor:
         return len(list(chosen_methods.values())[0]) > 0, chosen_methods
 
     def __minimize_and_distribute_methods(self, benchmarks: dict[str, dict[str, dict[str, Any]]]) -> dict[str, dict[str, dict[str, list[str]]]]:
-        # Create a set of all methods to be covered for each commit ID
+        # Define a threshold for what counts as "significantly higher" in duration
+        SIGNIFICANTLY_HIGHER_FACTOR = 2.0
+
+        # Create a set of all methods to be covered for each commit
         all_methods = {}
         for benchmark_info in benchmarks.values():
             for commit_id, methods in benchmark_info['targets'].items():
@@ -627,7 +627,7 @@ class BenchmarkExecutor:
                     all_methods[commit_id] = set()
                 all_methods[commit_id].update(methods)
 
-        # Create a list of benchmarks sorted by the number of unique methods they cover, then by duration
+        # Create a list of benchmarks sorted by number of unique methods they cover and then by duration
         sorted_benchmarks = sorted(
             (
                 benchmark, 
@@ -650,35 +650,51 @@ class BenchmarkExecutor:
                     x[2]
                 )
             )
+
+            # Identify the best benchmark based on methods covered
+            best_benchmark = sorted_benchmarks[0]
+            best_duration = best_benchmark[2]
+
+            # Check if other benchmarks provide similar coverage but with significantly lower duration
+            alternative_benchmarks = [
+                benchmark for benchmark in sorted_benchmarks[1:]
+                if sum(len(set(methods) - covered_methods[commit_id]) for commit_id, methods in benchmark[1].items()) == 
+                sum(len(set(methods) - covered_methods[commit_id]) for commit_id, methods in best_benchmark[1].items())
+            ]
             
-            for benchmark, targets, duration in sorted_benchmarks:
-                added_to_selected = False
+            if alternative_benchmarks:
+                min_alternative_duration = min(benchmark[2] for benchmark in alternative_benchmarks) # type: ignore
 
-                for commit_id, methods in targets.items():
-                    new_methods = set(methods) - covered_methods[commit_id]
+                # If the best benchmark is significantly slower, consider alternatives
+                if best_duration > min_alternative_duration * SIGNIFICANTLY_HIGHER_FACTOR:
+                    best_benchmark = min(alternative_benchmarks, key=lambda x: x[2])
+            
+            # Now add the best benchmark to the selected benchmarks
+            added_to_selected = False
+            for commit_id, methods in best_benchmark[1].items():
+                new_methods = set(methods) - covered_methods[commit_id]
 
-                    if new_methods:
-                        if commit_id not in selected_benchmarks:
-                            selected_benchmarks[commit_id] = {
-                                benchmark: {
-                                    "targets": [],
-                                    "duration": duration
-                                }
-                            }
-                        elif benchmark not in selected_benchmarks[commit_id]:
-                            selected_benchmarks[commit_id][benchmark] = {
+                if new_methods:
+                    if commit_id not in selected_benchmarks:
+                        selected_benchmarks[commit_id] = {
+                            best_benchmark[0]: {
                                 "targets": [],
-                                "duration": duration
+                                "duration": best_benchmark[2]
                             }
-                        
-                        selected_benchmarks[commit_id][benchmark]["targets"].extend(new_methods)
-                        covered_methods[commit_id].update(new_methods)
-                        added_to_selected = True
+                        }
+                    elif best_benchmark[0] not in selected_benchmarks[commit_id]:
+                        selected_benchmarks[commit_id][best_benchmark[0]] = {
+                            "targets": [],
+                            "duration": best_benchmark[2]
+                        }
+                    
+                    selected_benchmarks[commit_id][best_benchmark[0]]["targets"].extend(new_methods)
+                    covered_methods[commit_id].update(new_methods)
+                    added_to_selected = True
 
-                if added_to_selected:
-                    # Remove the selected benchmark from the list
-                    sorted_benchmarks = [b for b in sorted_benchmarks if b[0] != benchmark]
-                    break
+            if added_to_selected:
+                # Remove the selected benchmark from the list
+                sorted_benchmarks = [b for b in sorted_benchmarks if b[0] != best_benchmark[0]]
 
         return selected_benchmarks
 
@@ -713,7 +729,6 @@ class BenchmarkExecutor:
             env = mvn_service.update_java_home(java_version)
             process = subprocess.Popen([
                 'java',
-                '-Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector',
                 f'-javaagent:{self.jib_path}=config={config_path}',
                 '-jar',
                 benchmark_jar_path,
@@ -721,22 +736,20 @@ class BenchmarkExecutor:
                 '-wi', '0',
                 '-i', '5',
                 '-rf', 'json',
-                '-rff', os.path.join(config_directory, f'{benchmark_name}.json'),
+                '-rff', jmh_json_path,
                 benchmark_name
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, env=env)
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False, env=env)
 
             # Monitor the process
             usage_duration = 0
             while process.poll() is None:
-                mem_info = psutil.virtual_memory() # memory info
-                swap_info = psutil.swap_memory() # swap memory info
-                total_available = mem_info.available + swap_info.free # total available memory = mem + swap
-                mem_usage = psutil.Process(process.pid).memory_info().rss # memory usage of the process
+                mem_info = psutil.virtual_memory()
+                swap_info = psutil.swap_memory()
+                total_available = mem_info.available + swap_info.free
+                mem_usage = psutil.Process(process.pid).memory_info().rss
                 mem_usage_gb = mem_usage / 1024 / 1024 / 1024
 
-                # Check if the memory usage is too high (>95%)
                 if mem_usage > total_available * 0.95:
-                    # If the memory usage is too high for 5 seconds, terminate the process
                     if usage_duration < 5:
                         usage_duration += 1
                         Logger.warning(f'Memory usage is too high: {mem_usage_gb}GB...', num_indentations=self.printer_indent+1)
@@ -744,6 +757,9 @@ class BenchmarkExecutor:
                         Logger.error(f'Memory usage is too high: {mem_usage_gb}GB. Terminating...', num_indentations=self.printer_indent+1)
                         process.kill()
                         return None
+                else:
+                    usage_duration = 0
+
                 time.sleep(1)
 
             # Stop the LTTng tracing (if enabled)
@@ -761,7 +777,7 @@ class BenchmarkExecutor:
 
         return performance_data
     
-    def update_java_version_everywhere(self) -> None:
+    def __update_java_version_everywhere(self, java_version: str) -> None:
         for root, _, files in os.walk(self.project_path):
             for file in files:
                 if file == 'pom.xml':
@@ -774,11 +790,4 @@ class BenchmarkExecutor:
                     if not current_version:
                         continue
 
-                    # Check if current version is a float and less than 1.8
-                    try:
-                        current_version = float(current_version)
-                    except:
-                        continue
-
-                    if current_version and float(current_version) < 1.8:
-                        pom_service.set_java_version("1.8")
+                    pom_service.set_java_version(java_version)
