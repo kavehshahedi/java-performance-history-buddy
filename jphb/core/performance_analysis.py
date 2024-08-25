@@ -21,9 +21,10 @@ class PerformanceAnalysis:
         min_self_times = defaultdict(lambda: float('inf'))
         max_self_times = defaultdict(lambda: float('-inf'))
 
-        for batch in self._batch_process_traces():
-            self._process_batch(batch, total_execution_times, self_execution_times, call_counts, min_self_times, max_self_times)
-            del batch
+        call_stack = deque()
+        
+        for line in self._batch_process_traces():
+            self._process_line(line, call_stack, total_execution_times, self_execution_times, call_counts, min_self_times, max_self_times)
 
         # Calculate average self time
         average_self_times = {function: self_execution_times[function] / call_counts[function]
@@ -41,7 +42,63 @@ class PerformanceAnalysis:
                 'call_count': call_counts[function]
             }
 
+        del total_execution_times, self_execution_times, call_counts, min_self_times, max_self_times, average_self_times
+
         return output
+
+    def _batch_process_traces(self):
+        for file in sorted(os.listdir(self.trace_file_directory)):
+            if self.trace_file_name in file:
+                timestamp = file.replace(f'{self.trace_file_name}_', '').replace('.log', '').replace('.json', '')
+                
+                if file.endswith('.log'):
+                    log_file = f'{self.trace_file_directory}/{file}'
+                    json_file = f'{self.trace_file_directory}/{self.trace_file_name}_{timestamp}.json'
+                    
+                    if os.path.exists(json_file):
+                        yield from self._process_trace_file(log_file, json_file)
+
+    def _process_trace_file(self, log_file, json_file):
+        with open(json_file, 'r') as f:
+            metadata = json.load(f)
+        
+        log_time_difference = metadata['log_time_difference']
+        method_signature_hash = {v: k for k, v in metadata['method_signature_hash'].items()}
+
+        with open(log_file, 'r') as f:
+            for line in f:
+                match = general_pattern.match(line)
+                if match:
+                    time, start_or_end, method = match.groups()
+                    time = int(time) + log_time_difference
+                    method = method_signature_hash.get(method, method)
+                    yield f'[{time}] {start_or_end} {method}'
+
+    def _process_line(self, line, call_stack, total_execution_times, self_execution_times, call_counts, min_self_times, max_self_times):
+        if re.match(enter_pattern, line):
+            match = enter_pattern.match(line)
+            if match:
+                timestamp, function = match.groups()
+                call_stack.append((function, int(timestamp)))
+                call_counts[function] += 1
+        elif re.match(exit_pattern, line):
+            match = exit_pattern.match(line)
+            if match:
+                timestamp, function = match.groups()
+                exit_time = int(timestamp)
+                if call_stack and call_stack[-1][0] == function:
+                    _, enter_time = call_stack.pop()
+                    duration = exit_time - enter_time
+
+                    total_execution_times[function] += duration
+                    min_self_times[function] = min(min_self_times[function], duration)
+                    max_self_times[function] = max(max_self_times[function], duration)
+
+                    if call_stack:
+                        parent_function, _ = call_stack[-1]
+                        self_execution_times[parent_function] -= duration
+
+                    self_execution_times[function] += duration
 
     @staticmethod
     def get_trace_data_well_formatted(trace_data_path: str) -> list[str]:
@@ -105,66 +162,3 @@ class PerformanceAnalysis:
             traces.extend(trace_data)
 
         return traces
-
-    def _batch_process_traces(self):
-        for file in sorted(os.listdir(self.trace_file_directory)):
-            if self.trace_file_name in file:
-                timestamp = file.replace(f'{self.trace_file_name}_', '').replace('.log', '').replace('.json', '')
-                
-                if file.endswith('.log'):
-                    log_file = f'{self.trace_file_directory}/{file}'
-                    json_file = f'{self.trace_file_directory}/{self.trace_file_name}_{timestamp}.json'
-                    
-                    if os.path.exists(json_file):
-                        yield self._process_trace_file(log_file, json_file)
-
-    def _process_trace_file(self, log_file, json_file):
-        with open(log_file, 'r') as f:
-            trace = f.readlines()
-        
-        with open(json_file, 'r') as f:
-            metadata = json.load(f)
-        
-        log_time_difference = metadata['log_time_difference']
-        method_signature_hash = {v: k for k, v in metadata['method_signature_hash'].items()}
-
-        trace_data = []
-        for line in trace:
-            match = general_pattern.match(line)
-            if match:
-                time, start_or_end, method = match.groups()
-                time = int(time) + log_time_difference
-                method = method_signature_hash.get(method, method)
-                line = f'[{time}] {start_or_end} {method}'
-                trace_data.append(line)
-        
-        return trace_data
-
-    def _process_batch(self, batch, total_execution_times, self_execution_times, call_counts, min_self_times, max_self_times):
-        call_stack = deque()
-        
-        for line in batch:
-            if re.match(enter_pattern, line):
-                match = enter_pattern.match(line)
-                if match:
-                    timestamp, function = match.groups()
-                    call_stack.append((function, int(timestamp)))
-                    call_counts[function] += 1
-            elif re.match(exit_pattern, line):
-                match = exit_pattern.match(line)
-                if match:
-                    timestamp, function = match.groups()
-                    exit_time = int(timestamp)
-                    if call_stack and call_stack[-1][0] == function:
-                        enter_function, enter_time = call_stack.pop()
-                        duration = exit_time - enter_time
-
-                        total_execution_times[function] += duration
-                        min_self_times[function] = min(min_self_times[function], duration)
-                        max_self_times[function] = max(max_self_times[function], duration)
-
-                        if call_stack:
-                            parent_function, _ = call_stack[-1]
-                            self_execution_times[parent_function] -= duration
-
-                        self_execution_times[function] += duration
