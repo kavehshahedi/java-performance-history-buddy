@@ -69,8 +69,16 @@ class CommitCandidator:
                 # NOTE: We may also skip the commit if the Java version is not found, but for now, we will assume it is Java 8
                 java_version = '1.8'
 
+            # Check if Java version is a number (float or int)
+            try:
+                float(java_version)
+                should_update_pom = False
+            except ValueError:
+                # If the Java version is not a number, let's assume it is Java 8
+                java_version = '1.8'
+                should_update_pom = True
+
             # If the Java version is below 8, let's upgrade it to 8 for now
-            should_update_pom = False
             if float(java_version) < 1.8:
                 java_version = '1.8'
                 should_update_pom = True
