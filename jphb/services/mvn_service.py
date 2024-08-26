@@ -2,6 +2,8 @@ import subprocess
 import os
 from typing import Optional
 
+from jphb.utils.file_utils import FileUtils
+
 JAVA_HOME_PATHS = {
     '1.8': '/usr/lib/jvm/java-8-openjdk-amd64',
     '11': '/usr/lib/jvm/java-11-openjdk-amd64',
@@ -110,6 +112,16 @@ class MvnService:
             java_version = next_version
 
             retries += 1
+
+    @staticmethod
+    def clean_mvn_cache(cwd:str, directory: str) -> None:
+        subprocess.run(['mvn', 'dependency:purge-local-repository', '-DreResolve=false'], cwd=cwd, capture_output=True)
+        if FileUtils.is_path_exists(directory):
+            subprocess.run(['rm', '-rf', directory], cwd=cwd, capture_output=True)
+
+    @staticmethod
+    def remove_security_from_jar(jar_path: str) -> None:
+        subprocess.run(['zip', '-d', jar_path, 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'], capture_output=True)
     
     @staticmethod
     def update_java_home(java_version: str) -> dict:

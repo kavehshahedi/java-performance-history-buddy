@@ -351,6 +351,7 @@ class BenchmarkExecutor:
         
         Logger.info(f'Building the project locally with Java {self.java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
+        mvn_service.clean_mvn_cache(cwd=self.project_path, directory=os.path.join(self.project_path, self.project_benchmark_directory, 'target'))
         status, jv = mvn_service.install(cwd=self.project_path,
                                          java_version=java_version,
                                          verbose=False,
@@ -422,6 +423,7 @@ class BenchmarkExecutor:
         
         Logger.info(f'Building the benchmarks with custom module locally with Java {java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
+        mvn_service.clean_mvn_cache(cwd=self.project_path, directory=os.path.join(self.project_path, module, 'target'))
         status, jv = mvn_service.package_module(cwd=self.project_path,
                                                 module=module,
                                                 java_version=java_version,
@@ -464,6 +466,7 @@ class BenchmarkExecutor:
             try:
                 mvn_service = MvnService()
                 env = mvn_service.update_java_home(java_version)
+                MvnService.remove_security_from_jar(candidate_jar)
                 process = subprocess.run([
                         'java',
                         '-jar',
@@ -486,6 +489,7 @@ class BenchmarkExecutor:
         try:
             mvn_service = MvnService()
             env = mvn_service.update_java_home(java_version)
+            MvnService.remove_security_from_jar(benchmark_jar_path)
             process = subprocess.run([
                     'java',
                     '-jar',
@@ -556,6 +560,7 @@ class BenchmarkExecutor:
 
         mvn_service = MvnService()
         env = mvn_service.update_java_home(java_version)
+        MvnService.remove_security_from_jar(benchmark_jar_path)
         command = [
             'java',
             f'-javaagent:{self.jib_path}=config={config_path}',
@@ -727,6 +732,7 @@ class BenchmarkExecutor:
             # Run the benchmark
             mvn_service = MvnService()
             env = mvn_service.update_java_home(java_version)
+            MvnService.remove_security_from_jar(benchmark_jar_path)
             process = subprocess.Popen([
                 'java',
                 f'-javaagent:{self.jib_path}=config={config_path}',
