@@ -65,8 +65,11 @@ ENV PATH="$JAVA_HOME/bin:/usr/local/bin:${PATH}"
 
 # Copy the toolchains.xml file to the container
 # It should be both for root and the user
-COPY toolchains.xml /root/.m2/toolchains.xml
-COPY toolchains.xml /home/kavehshahedi/.m2/toolchains.xml
+COPY conf/java/toolchains.xml /root/.m2/toolchains.xml
+COPY conf/java/toolchains.xml /home/kavehshahedi/.m2/toolchains.xml
+
+# Copy the maven settings.xml file to the container
+COPY conf/maven/settings.xml /usr/local/apache-maven-3.9.8/conf/settings.xml
 
 # Run main.py when the container launches
 ENTRYPOINT ["python", "main.py"]
