@@ -1,5 +1,5 @@
 from types import NoneType
-from typing import Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 from git import Repo
 import os
 import shutil
@@ -16,7 +16,7 @@ from jphb.services.mvn_service import MvnService
 from jphb.services.lttng_service import LTTngService
 
 from jphb.utils.file_utils import FileUtils
-from jphb.utils.printer import Printer
+from jphb.utils.Logger import Logger
 from jphb.core.performance_analysis import PerformanceAnalysis
 
 
@@ -82,11 +82,11 @@ class BenchmarkExecutor:
         self.java_version = java_version['version']
 
         # Print the variables
-        Printer.info(f'Info: {current_commit_hash}', num_indentations=self.printer_indent)
-        Printer.info(f'Benchmark directory: {self.project_benchmark_directory}', num_indentations=self.printer_indent)
-        Printer.info(f'Benchmark name: {self.project_benchmark_name}', num_indentations=self.printer_indent)
-        Printer.info(f'Java version: {self.java_version}', num_indentations=self.printer_indent)
-        Printer.separator(num_indentations=self.printer_indent)
+        Logger.info(f'Info: {current_commit_hash}', num_indentations=self.printer_indent)
+        Logger.info(f'Benchmark directory: {self.project_benchmark_directory}', num_indentations=self.printer_indent)
+        Logger.info(f'Benchmark name: {self.project_benchmark_name}', num_indentations=self.printer_indent)
+        Logger.info(f'Java version: {self.java_version}', num_indentations=self.printer_indent)
+        Logger.separator(num_indentations=self.printer_indent)
 
         commit = self.repo.commit(current_commit_hash)
 
@@ -94,57 +94,54 @@ class BenchmarkExecutor:
         is_previous_benchmark_built = True
         is_current_benchmark_built = True
         for commit_hash in [previous_commit_hash, current_commit_hash]:
-            Printer.info(f'Checking out to {"current" if commit_hash == current_commit_hash else "previous"} commit...', num_indentations=self.printer_indent)
+            Logger.info(f'Checking out to {"current" if commit_hash == current_commit_hash else "previous"} commit...', num_indentations=self.printer_indent)
 
             # Checkout the commit
             self.repo.git.checkout(commit_hash, force=True)
 
             # If the Java version should be updated, update the pom.xml file
             if java_version['should_update_pom']:
-                pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
-                pom_service_bench = PomService(pom_source=os.path.join(self.project_path, self.project_benchmark_directory, 'pom.xml'))
-                pom_service.set_java_version(self.java_version)
-                pom_service_bench.set_java_version(self.java_version)
+                self.__update_java_version_everywhere(self.java_version)
 
             if self.project_benchmark_module:
                 # Check whether the benchmarks are buildable
-                Printer.info(f'Checking if benchmarks with custom module are buildable...', num_indentations=self.printer_indent+1)
+                Logger.info(f'Checking if benchmarks with custom module are buildable...', num_indentations=self.printer_indent+1)
                 is_benchmark_buildable = self.__build_benchmarks_with_module(module=self.project_benchmark_module,
                                                                             benchmark_commit_hash=commit_hash,
                                                                             build_anyway=(commit_hash == current_commit_hash),
                                                                             java_version=self.java_version)
 
                 if not is_benchmark_buildable:
-                    Printer.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
+                    Logger.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
                     return False, None
-
-                Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
+                
+                Logger.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
             else:
                 # Check whether the project is buildable
-                Printer.info(f'Checking if project is buildable...', num_indentations=self.printer_indent+1)
+                Logger.info(f'Checking if project is buildable...', num_indentations=self.printer_indent+1)
                 is_project_buildable = self.__build_project(build_anyway=(commit_hash == current_commit_hash),
                                                             java_version=self.java_version,
                                                             commit_hash=commit_hash)
                 if not is_project_buildable:
-                    Printer.error(f'Project is not buildable', num_indentations=self.printer_indent+2)
+                    Logger.error(f'Project is not buildable', num_indentations=self.printer_indent+2)
                     return False, None
 
-                Printer.success(f'Project is buildable', num_indentations=self.printer_indent+2)
-
+                Logger.success(f'Project is buildable', num_indentations=self.printer_indent+2)
+    
                 # Check whether the benchmarks are buildable
-                Printer.info(f'Checking if benchmarks are buildable...', num_indentations=self.printer_indent+1)
+                Logger.info(f'Checking if benchmarks are buildable...', num_indentations=self.printer_indent+1)
                 is_benchmark_buildable = self.__build_benchmarks(benchmark_directory=self.project_benchmark_directory,
                                                                 benchmark_commit_hash=commit_hash,
                                                                 build_anyway=(commit_hash == current_commit_hash),
                                                                 java_version=self.java_version)            
                 if not is_benchmark_buildable:
-                    Printer.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
+                    Logger.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
                     if commit_hash == current_commit_hash:
                         is_current_benchmark_built = False
                     else:
                         is_previous_benchmark_built = False
                 else:
-                    Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
+                    Logger.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
 
             # Check the hash of the benchmarks folder
             if commit_hash == current_commit_hash:
@@ -154,13 +151,13 @@ class BenchmarkExecutor:
 
         # If both benchmarks are not built, return
         if not is_previous_benchmark_built and not is_current_benchmark_built:
-            Printer.error(f'Both benchmarks are not built', num_indentations=self.printer_indent+1)
+            Logger.error(f'Both benchmarks are not built', num_indentations=self.printer_indent+1)
             return False, None
 
         # Check if the benchmarks are the same
         has_same_benchmarks = (current_benchmark_directory_hash == previous_benchmark_directory_hash) # type: ignore
-        Printer.info(f'Benchmarks are the same: {has_same_benchmarks}', num_indentations=self.printer_indent+1)
-
+        Logger.info(f'Benchmarks are the same: {has_same_benchmarks}', num_indentations=self.printer_indent+1)
+        
         if is_previous_benchmark_built:
             if has_same_benchmarks and is_current_benchmark_built:
                 commit_to_use_for_benchmark = current_commit_hash
@@ -171,7 +168,7 @@ class BenchmarkExecutor:
 
         # If the commit to use for the benchmark is not the current commit, replace the benchmarks
         if commit_to_use_for_benchmark != current_commit_hash:
-            Printer.info(f'Replacing the benchmarks with the other commit...', num_indentations=self.printer_indent)
+            Logger.info(f'Replacing the benchmarks with the other commit...', num_indentations=self.printer_indent)
             self.__replace_benchmarks(from_commit_hash=commit_to_use_for_benchmark,
                                       to_commit_hash=current_commit_hash,
                                       benchmark_directory=self.project_benchmark_directory)
@@ -192,75 +189,80 @@ class BenchmarkExecutor:
                                         java_version=self.java_version)
 
             if not status:
-                Printer.error(f'Benchmarks are not compatible with the other commit', num_indentations=self.printer_indent+1)
+                Logger.error(f'Benchmarks are not compatible with the other commit', num_indentations=self.printer_indent+1)
                 return False, None
-
-            Printer.success(f'Benchmarks are replaced with the other commit', num_indentations=self.printer_indent+1)
+            
+            Logger.success(f'Benchmarks are replaced with the other commit', num_indentations=self.printer_indent+1)
 
         # Wait a bit (2 seconds) after building the benchmarks for the files to be written
         time.sleep(2)
 
         # Get the benchmark history
-        Printer.info('Checking if benchmark has previously executed...', num_indentations=self.printer_indent+1)
+        Logger.info('Checking if benchmark has previously executed...', num_indentations=self.printer_indent+1)
         hash_to_check = FileUtils.get_folder_hash(os.path.join(self.project_path, self.project_benchmark_directory, 'src', 'main'))
         has_benchmark_executed, benchmark_history = self.__has_benchmark_previously_executed(hash_to_check=hash_to_check)
         if has_benchmark_executed:
-            Printer.success(f'Benchmark has previously executed', num_indentations=self.printer_indent+2)
+            Logger.success(f'Benchmark has previously executed', num_indentations=self.printer_indent+2)
         else:
-            Printer.warning(f'Benchmark has not previously executed', num_indentations=self.printer_indent+2)
+            Logger.warning(f'Benchmark has not previously executed', num_indentations=self.printer_indent+2)
 
-        Printer.info('Getting list of benchmarks...', num_indentations=self.printer_indent)
+        Logger.info('Getting list of benchmarks...', num_indentations=self.printer_indent)
         benchmark_jar_path, list_of_benchmarks = self.__get_list_of_benchmarks(benchmark_directory=self.project_benchmark_directory,
                                                                                benchmark_name=self.project_benchmark_name,
                                                                                java_version=self.java_version)
         if not list_of_benchmarks:
-            Printer.error(f'Can\'t get list of benchmarks', num_indentations=self.printer_indent+1)
+            Logger.error(f'Can\'t get list of benchmarks', num_indentations=self.printer_indent+1)
             return False, None
 
         # Get the target methods for each benchmark
-        Printer.info('Getting target methods...', num_indentations=self.printer_indent)
+        Logger.info('Getting target methods...', num_indentations=self.printer_indent)
         target_methods = []
         if not has_benchmark_executed:
             for i, benchmark_name in enumerate(list_of_benchmarks):
-                tm = self.__get_target_methods(project_package=target_package,
+                results = self.__get_target_methods(project_package=target_package,
                                                java_version=self.java_version,
                                                commit_hash=commit.hexsha,
                                                benchmark_jar_path=benchmark_jar_path,
-                                               benchmark_name=benchmark_name)
-                if not tm:
-                    Printer.error(f'({i+1}/{len(list_of_benchmarks)}) Can\'t get target methods for {benchmark_name}', num_indentations=self.printer_indent+1)
+                                               benchmark_name=benchmark_name)                       
+                if not results:
+                    Logger.error(f'({i+1}/{len(list_of_benchmarks)}) Can\'t get target methods for {benchmark_name}', num_indentations=self.printer_indent+1)
                     continue
 
-                Printer.success(f'({i+1}/{len(list_of_benchmarks)}) Got target methods for {benchmark_name}', num_indentations=self.printer_indent+1)
+                Logger.success(f'({i+1}/{len(list_of_benchmarks)}) Got target methods for {benchmark_name}. Duration: {results["duration"]}', num_indentations=self.printer_indent+1)
 
                 target_methods.append({
                     'benchmark': benchmark_name,
-                    'methods': tm
+                    'methods': results['methods'],
+                    'duration': results['duration']
                 })
 
             self.__save_benchmark_history(target_methods=target_methods,
                                           benchmark_hash=hash_to_check)
         else:
-            Printer.success(f'Got the target methods from the history', num_indentations=self.printer_indent+1)
+            Logger.success(f'Got the target methods from the history', num_indentations=self.printer_indent+1)
             target_methods = benchmark_history
 
         # Check if the benchmarks are targeting the changed methods
-        Printer.info('Checking if benchmark is targeting changed methods...', num_indentations=self.printer_indent)
-        chosen_benchmarks:dict[str, dict[str, list[str]]] = {}
+        Logger.info('Checking if benchmark is targeting changed methods...', num_indentations=self.printer_indent)
+        chosen_benchmarks:dict[str, dict[str, dict[str, Any]]] = {}
         for tm in target_methods:
             tm_benchmark = tm['benchmark']
             tm_methods = tm['methods']
+            tm_duration = tm['duration']
 
             is_targeting, targets = self.__is_benchmark_targeting_changed_methods(changed_methods=changed_methods,
                                                                                   target_methods=tm_methods)
 
             # If the benchmark is targeting the changed methods, add it to the chosen benchmarks for running
             if is_targeting:
-                chosen_benchmarks[tm_benchmark] = targets
+                chosen_benchmarks[tm_benchmark] = {
+                    'targets': targets,
+                    'duration': tm_duration
+                }
 
         # If no benchmarks are targeting the changed methods, return (i.e., skip the commit)
         if not chosen_benchmarks:
-            Printer.warning(f'No benchmarks are targeting the changed methods', num_indentations=self.printer_indent+1)
+            Logger.warning(f'No benchmarks are targeting the changed methods', num_indentations=self.printer_indent+1)
             return False, None
 
         # We want to minimize the number of benchmarks for running
@@ -272,23 +274,24 @@ class BenchmarkExecutor:
             config_directory = os.path.join('results', self.project_name, 'commits', commit.hexsha, 'execution', commit_hash_)
             FileUtils.create_directory(config_directory, remove_contents=True)
 
-            for benchmark, methods in chosen_benchmarks_.items():
-                Printer.success(f'Benchmark {benchmark} is targeting {len(methods)} methods', num_indentations=self.printer_indent+1)
+            for bench_name, bench_info in chosen_benchmarks_.items():
+                methods = bench_info['targets']
+                Logger.success(f'Benchmark {bench_name} is targeting {len(methods)} methods', num_indentations=self.printer_indent+1)
 
                 # Create the YAML file
                 YamlCreator().create_yaml(
-                    log_file=os.path.join(config_directory, 'ust', f'{benchmark}.log'),
+                    log_file=os.path.join(config_directory, 'ust', f'{bench_name}.log'),
                     target_package=target_package,
                     instrument=methods,
                     ignore=[],
                     instrument_main_method=False,
                     add_timestamp_to_file_names=True,
                     use_hash=True,
-                    yaml_file=os.path.join(config_directory, f'{benchmark}.yaml')
+                    yaml_file=os.path.join(config_directory, f'{bench_name}.yaml')
                 )
 
             # Run the benchmarks
-            Printer.info(f'Checking out to {"current" if commit_hash_ == current_commit_hash else "previous"} commit...', num_indentations=self.printer_indent)
+            Logger.info(f'Checking out to {"current" if commit_hash_ == current_commit_hash else "previous"} commit...', num_indentations=self.printer_indent)
             # Checkout the commit. If already checked out, no need to checkout again
 
             if commit_hash_ != current_commit_hash:
@@ -296,11 +299,10 @@ class BenchmarkExecutor:
 
                 # If the Java version should be updated, update the pom.xml file
                 if java_version['should_update_pom']:
-                    pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
-                    pom_service.set_java_version(self.java_version)
+                    self.__update_java_version_everywhere(self.java_version)
 
                 if not has_same_benchmarks and commit_to_use_for_benchmark != current_commit_hash:
-                    Printer.info(f'Replacing the benchmarks with the other commit...', num_indentations=self.printer_indent)
+                    Logger.info(f'Replacing the benchmarks with the other commit...', num_indentations=self.printer_indent)
                     self.__replace_benchmarks(from_commit_hash=commit_to_use_for_benchmark,
                                                 to_commit_hash=commit_hash_,
                                                 benchmark_directory=self.project_benchmark_directory)
@@ -318,15 +320,15 @@ class BenchmarkExecutor:
                                             benchmark_commit_hash=commit_hash_,
                                             build_anyway=True, # Since we need to run the benchmarks, we build them anyway
                                             java_version=self.java_version)
-
-            Printer.info('Running benchmarks...', num_indentations=self.printer_indent+1)
+                
+            Logger.info('Running benchmarks...', num_indentations=self.printer_indent+1)
             performance_data = self.__run_benchmark_and_get_performance_data(benchmark_jar_path=benchmark_jar_path,
                                                                              config_directory=config_directory,
                                                                              java_version=self.java_version)
             if not performance_data:
-                Printer.error(f'Error while running benchmarks for getting performance data', num_indentations=self.printer_indent+2)
+                Logger.error(f'Error while running benchmarks for getting performance data', num_indentations=self.printer_indent+2)
                 return False, None
-            Printer.success(f'Benchmarks are executed successfully', num_indentations=self.printer_indent+2)
+            Logger.success(f'Benchmarks are executed successfully', num_indentations=self.printer_indent+2)
 
             performance_results[commit_hash_] = performance_data
 
@@ -346,9 +348,10 @@ class BenchmarkExecutor:
 
         if commit_hash in build_history and not build_anyway:
             return build_history[commit_hash]
-
-        Printer.info(f'Building the project locally with Java {self.java_version}', num_indentations=self.printer_indent+2)
+        
+        Logger.info(f'Building the project locally with Java {self.java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
+        mvn_service.clean_mvn_cache(cwd=self.project_path, directory=os.path.join(self.project_path, self.project_benchmark_directory, 'target'))
         status, jv = mvn_service.install(cwd=self.project_path,
                                          java_version=java_version,
                                          verbose=True,
@@ -361,7 +364,7 @@ class BenchmarkExecutor:
         # Update the Java version is the build is successful
         if status:
             if jv != self.java_version:
-                Printer.info(f'Java version is updated to {jv}', num_indentations=self.printer_indent+3)
+                Logger.info(f'Java version is updated to {jv}', num_indentations=self.printer_indent+3)
                 self.java_version = jv
 
         return status
@@ -387,7 +390,7 @@ class BenchmarkExecutor:
             cwd = os.path.join(self.project_path, custom_command['cwd'])
 
         # Build the benchmarks (i.e., package)
-        Printer.info(f'Building the benchmarks locally with Java {java_version}', num_indentations=self.printer_indent+2)
+        Logger.info(f'Building the benchmarks locally with Java {java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
         status, jv = mvn_service.package(cwd=cwd,
                                          custom_command=command,
@@ -417,9 +420,10 @@ class BenchmarkExecutor:
         # Check if the build has already been done
         if benchmark_commit_hash in build_history and not build_anyway:
             return build_history[benchmark_commit_hash]
-
-        Printer.info(f'Building the benchmarks with custom module locally with Java {java_version}', num_indentations=self.printer_indent+2)
+        
+        Logger.info(f'Building the benchmarks with custom module locally with Java {java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
+        mvn_service.clean_mvn_cache(cwd=self.project_path, directory=os.path.join(self.project_path, module, 'target'))
         status, jv = mvn_service.package_module(cwd=self.project_path,
                                                 module=module,
                                                 java_version=java_version,
@@ -433,7 +437,7 @@ class BenchmarkExecutor:
         # Update the Java version is the build is successful
         if status:
             if jv != self.java_version:
-                Printer.info(f'Java version is updated to {jv}', num_indentations=self.printer_indent+3)
+                Logger.info(f'Java version is updated to {jv}', num_indentations=self.printer_indent+3)
                 self.java_version = jv
 
         return status
@@ -462,17 +466,7 @@ class BenchmarkExecutor:
             try:
                 mvn_service = MvnService()
                 env = mvn_service.update_java_home(java_version)
-                subprocess.run(
-                    [
-                        "zip",
-                        "-d",
-                        candidate_jar,
-                        "META-INF/*.SF",
-                        "META-INF/*.RSA",
-                        "META-INF/*.DSA",
-                    ],
-                    capture_output=True, shell=False, env=env
-                )
+                MvnService.remove_security_from_jar(candidate_jar)
                 process = subprocess.run([
                         'java',
                         '-jar',
@@ -495,6 +489,7 @@ class BenchmarkExecutor:
         try:
             mvn_service = MvnService()
             env = mvn_service.update_java_home(java_version)
+            MvnService.remove_security_from_jar(benchmark_jar_path)
             process = subprocess.run([
                     'java',
                     '-jar',
@@ -541,7 +536,7 @@ class BenchmarkExecutor:
                              java_version: str,
                              commit_hash: str,
                              benchmark_jar_path: str,
-                             benchmark_name: str) -> Union[NoneType, list[str]]:
+                             benchmark_name: str) -> Union[NoneType, dict[str, Any]]:
         log_path = os.path.join('results', self.project_name, 'commits', commit_hash, 'visited', f'{benchmark_name}.log')
         config_path = os.path.join('results', self.project_name, 'commits', commit_hash, 'visited', f'{benchmark_name}.yaml')
 
@@ -565,9 +560,9 @@ class BenchmarkExecutor:
 
         mvn_service = MvnService()
         env = mvn_service.update_java_home(java_version)
+        MvnService.remove_security_from_jar(benchmark_jar_path)
         command = [
             'java',
-            '-Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector',
             f'-javaagent:{self.jib_path}=config={config_path}',
             '-jar',
             benchmark_jar_path,
@@ -577,14 +572,17 @@ class BenchmarkExecutor:
             '-r', '1s',
             benchmark_name
         ]
-
+        
+        start_time = time.time()
         try:
+            start_time = time.time()
             process = subprocess.run(command, capture_output=True, shell=False, env=env, timeout=60)
 
             if process.returncode != 0:
                 return None
         except subprocess.TimeoutExpired:
             pass
+        duration = time.time() - start_time
 
         target_methods = set()
 
@@ -593,7 +591,10 @@ class BenchmarkExecutor:
             target_methods.add(
                 ' '.join(line.strip().split(' ')[2:]).split('(')[0].strip())
 
-        return list(target_methods)
+        return {
+            'methods': list(target_methods),
+            'duration': duration
+        }
 
     def __is_benchmark_targeting_changed_methods(self, changed_methods: dict[str, list[str]], # The list of changed methods in the commit
                                                  target_methods: list[str] # The list of methods that the benchmark executes
@@ -619,44 +620,86 @@ class BenchmarkExecutor:
 
         return len(list(chosen_methods.values())[0]) > 0, chosen_methods
 
-    def __minimize_and_distribute_methods(self, benchmarks: dict[str, dict[str, list[str]]]) -> dict[str, dict[str, list[str]]]:
-        # Create a set of all methods to be covered
-        all_methods = set()
-        for method_dict in benchmarks.values():
-            for methods in method_dict.values():
-                all_methods.update(methods)
+    def __minimize_and_distribute_methods(self, benchmarks: dict[str, dict[str, dict[str, Any]]]) -> dict[str, dict[str, dict[str, list[str]]]]:
+        # Define a threshold for what counts as "significantly higher" in duration
+        SIGNIFICANTLY_HIGHER_FACTOR = 2.0
 
-        # Create a list of benchmarks sorted by the number of unique methods they cover in descending order
+        # Create a set of all methods to be covered for each commit
+        all_methods = {}
+        for benchmark_info in benchmarks.values():
+            for commit_id, methods in benchmark_info['targets'].items():
+                if commit_id not in all_methods:
+                    all_methods[commit_id] = set()
+                all_methods[commit_id].update(methods)
+
+        # Create a list of benchmarks sorted by number of unique methods they cover and then by duration
         sorted_benchmarks = sorted(
-            ((benchmark, {method_id: methods for method_id, methods in method_dict.items()})
-            for benchmark, method_dict in benchmarks.items()),
-            key=lambda x: len({method for methods in x[1].values() for method in methods}),
-            reverse=True
+            (
+                benchmark, 
+                benchmark_info['targets'], 
+                benchmark_info['duration']
+            )
+            for benchmark, benchmark_info in benchmarks.items()
         )
 
         selected_benchmarks = {}
-        covered_methods = set()
+        covered_methods = {commit_id: set() for commit_id in all_methods}
 
         # Select benchmarks iteratively
-        while covered_methods != all_methods:
-            for benchmark, method_dict in sorted_benchmarks:
-                # Calculate the new methods this benchmark will cover
-                new_methods = {method for methods in method_dict.values() for method in methods} - covered_methods
+        while any(covered_methods[commit_id] != all_methods[commit_id] for commit_id in all_methods):
+            # Sort benchmarks by maximum new methods covered first, then by duration
+            sorted_benchmarks = sorted(
+                sorted_benchmarks,
+                key=lambda x: (
+                    -sum(len(set(methods) - covered_methods[commit_id]) for commit_id, methods in x[1].items()),
+                    x[2]
+                )
+            )
+
+            # Identify the best benchmark based on methods covered
+            best_benchmark = sorted_benchmarks[0]
+            best_duration = best_benchmark[2]
+
+            # Check if other benchmarks provide similar coverage but with significantly lower duration
+            alternative_benchmarks = [
+                benchmark for benchmark in sorted_benchmarks[1:]
+                if sum(len(set(methods) - covered_methods[commit_id]) for commit_id, methods in benchmark[1].items()) == 
+                sum(len(set(methods) - covered_methods[commit_id]) for commit_id, methods in best_benchmark[1].items())
+            ]
+            
+            if alternative_benchmarks:
+                min_alternative_duration = min(benchmark[2] for benchmark in alternative_benchmarks) # type: ignore
+
+                # If the best benchmark is significantly slower, consider alternatives
+                if best_duration > min_alternative_duration * SIGNIFICANTLY_HIGHER_FACTOR:
+                    best_benchmark = min(alternative_benchmarks, key=lambda x: x[2])
+            
+            # Now add the best benchmark to the selected benchmarks
+            added_to_selected = False
+            for commit_id, methods in best_benchmark[1].items():
+                new_methods = set(methods) - covered_methods[commit_id]
+
                 if new_methods:
-                    # Assign new methods to their respective commit hashes in the selected benchmarks
-                    for method_id, methods in method_dict.items():
-                        if any(method in new_methods for method in methods):
-                            if method_id not in selected_benchmarks:
-                                selected_benchmarks[method_id] = {}
-                            if benchmark not in selected_benchmarks[method_id]:
-                                selected_benchmarks[method_id][benchmark] = []
-                            selected_benchmarks[method_id][benchmark].extend(
-                                method for method in methods if method in new_methods
-                            )
-                    covered_methods.update(new_methods)
-                    # Remove the selected benchmark from the list
-                    sorted_benchmarks = [b for b in sorted_benchmarks if b[0] != benchmark]
-                    break
+                    if commit_id not in selected_benchmarks:
+                        selected_benchmarks[commit_id] = {
+                            best_benchmark[0]: {
+                                "targets": [],
+                                "duration": best_benchmark[2]
+                            }
+                        }
+                    elif best_benchmark[0] not in selected_benchmarks[commit_id]:
+                        selected_benchmarks[commit_id][best_benchmark[0]] = {
+                            "targets": [],
+                            "duration": best_benchmark[2]
+                        }
+                    
+                    selected_benchmarks[commit_id][best_benchmark[0]]["targets"].extend(new_methods)
+                    covered_methods[commit_id].update(new_methods)
+                    added_to_selected = True
+
+            if added_to_selected:
+                # Remove the selected benchmark from the list
+                sorted_benchmarks = [b for b in sorted_benchmarks if b[0] != best_benchmark[0]]
 
         return selected_benchmarks
 
@@ -689,22 +732,9 @@ class BenchmarkExecutor:
             # Run the benchmark
             mvn_service = MvnService()
             env = mvn_service.update_java_home(java_version)
-            subprocess.run(
-                [
-                    "zip",
-                    "-d",
-                    benchmark_jar_path,
-                    "META-INF/*.SF",
-                    "META-INF/*.RSA",
-                    "META-INF/*.DSA",
-                ],
-                capture_output=True,
-                shell=False,
-                env=env,
-            )
+            MvnService.remove_security_from_jar(benchmark_jar_path)
             process = subprocess.Popen([
                 'java',
-                '-Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector',
                 f'-javaagent:{self.jib_path}=config={config_path}',
                 '-jar',
                 benchmark_jar_path,
@@ -712,29 +742,30 @@ class BenchmarkExecutor:
                 '-wi', '0',
                 '-i', '1',
                 '-rf', 'json',
-                '-rff', os.path.join(config_directory, f'{benchmark_name}.json'),
+                '-rff', jmh_json_path,
                 benchmark_name
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, env=env)
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False, env=env)
 
             # Monitor the process
             usage_duration = 0
             while process.poll() is None:
-                mem_info = psutil.virtual_memory() # memory info
-                swap_info = psutil.swap_memory() # swap memory info
-                total_available = mem_info.available + swap_info.free # total available memory = mem + swap
-                mem_usage = psutil.Process(process.pid).memory_info().rss # memory usage of the process
+                mem_info = psutil.virtual_memory()
+                swap_info = psutil.swap_memory()
+                total_available = mem_info.available + swap_info.free
+                mem_usage = psutil.Process(process.pid).memory_info().rss
                 mem_usage_gb = mem_usage / 1024 / 1024 / 1024
 
-                # Check if the memory usage is too high (>95%)
                 if mem_usage > total_available * 0.95:
-                    # If the memory usage is too high for 5 seconds, terminate the process
                     if usage_duration < 5:
                         usage_duration += 1
-                        Printer.warning(f'Memory usage is too high: {mem_usage_gb}GB...', num_indentations=self.printer_indent+1)
+                        Logger.warning(f'Memory usage is too high: {mem_usage_gb}GB...', num_indentations=self.printer_indent+1)
                     else:
-                        Printer.error(f'Memory usage is too high: {mem_usage_gb}GB. Terminating...', num_indentations=self.printer_indent+1)
+                        Logger.error(f'Memory usage is too high: {mem_usage_gb}GB. Terminating...', num_indentations=self.printer_indent+1)
                         process.kill()
                         return None
+                else:
+                    usage_duration = 0
+
                 time.sleep(1)
 
             # Stop the LTTng tracing (if enabled)
@@ -743,8 +774,7 @@ class BenchmarkExecutor:
 
             # Check if the process is successful
             if process.returncode != 0:
-                Printer.error(f'Error while running the benchmark {benchmark_name}', num_indentations=self.printer_indent+1)
-                print(process.stderr.read().decode('utf-8'))
+                Logger.error(f'Error while running the benchmark {benchmark_name}', num_indentations=self.printer_indent+1)
                 return None
 
             # Analyze the performance
@@ -752,8 +782,8 @@ class BenchmarkExecutor:
             performance_data[benchmark_name] = method_performances
 
         return performance_data
-
-    def update_java_version_everywhere(self) -> None:
+    
+    def __update_java_version_everywhere(self, java_version: str) -> None:
         for root, _, files in os.walk(self.project_path):
             for file in files:
                 if file == 'pom.xml':
@@ -766,11 +796,4 @@ class BenchmarkExecutor:
                     if not current_version:
                         continue
 
-                    # Check if current version is a float and less than 1.8
-                    try:
-                        current_version = float(current_version)
-                    except:
-                        continue
-
-                    if current_version and float(current_version) < 1.8:
-                        pom_service.set_java_version("1.8")
+                    pom_service.set_java_version(java_version)

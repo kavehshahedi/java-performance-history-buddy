@@ -1,58 +1,30 @@
 import re
-from collections import defaultdict, deque
 import os
 import json
+from collections import deque, defaultdict
 
 # Regular expressions for parsing trace lines
 general_pattern = re.compile(r'\[(\d+)\] (S|E) (.+)')
 enter_pattern = re.compile(r'\[(\d+)\] S (.+)')
 exit_pattern = re.compile(r'\[(\d+)\] E (.+)')
 
-
 class PerformanceAnalysis:
     def __init__(self, trace_data_path: str) -> None:
-        self.traces = PerformanceAnalysis.get_trace_data_well_formatted(trace_data_path)
+        self.trace_data_path = trace_data_path
+        self.trace_file_directory = os.path.dirname(trace_data_path)
+        self.trace_file_name = trace_data_path.replace(f'{self.trace_file_directory}/', '').replace('.log', '')
 
     def analyze(self) -> dict:
-        # Dictionaries to store times
-        call_stack = deque()
         total_execution_times = defaultdict(int)
         self_execution_times = defaultdict(int)
         call_counts = defaultdict(int)
         min_self_times = defaultdict(lambda: float('inf'))
         max_self_times = defaultdict(lambda: float('-inf'))
 
-        # Parse the trace data
-        for line in self.traces:
-            if re.match(enter_pattern, line):
-                match = enter_pattern.match(line)
-                if match:
-                    timestamp, function = match.groups()
-                    call_stack.append((function, int(timestamp)))
-                    call_counts[function] += 1
-            elif re.match(exit_pattern, line):
-                match = exit_pattern.match(line)
-                if match:
-                    timestamp, function = match.groups()
-                    exit_time = int(timestamp)
-                    if call_stack and call_stack[-1][0] == function:
-                        enter_function, enter_time = call_stack.pop()
-                        duration = exit_time - enter_time
-
-                        # Update total execution times
-                        total_execution_times[function] += duration
-
-                        # Update min and max self times
-                        min_self_times[function] = min(min_self_times[function], duration)
-                        max_self_times[function] = max(max_self_times[function], duration)
-
-                        # Adjust the parent's self time
-                        if call_stack:
-                            parent_function, _ = call_stack[-1]
-                            self_execution_times[parent_function] -= duration
-
-                        # Add the duration to self time of this function
-                        self_execution_times[function] += duration
+        call_stack = deque()
+        
+        for line in self._batch_process_traces():
+            self._process_line(line, call_stack, total_execution_times, self_execution_times, call_counts, min_self_times, max_self_times)
 
         # Calculate average self time
         average_self_times = {function: self_execution_times[function] / call_counts[function]
@@ -70,7 +42,63 @@ class PerformanceAnalysis:
                 'call_count': call_counts[function]
             }
 
+        del total_execution_times, self_execution_times, call_counts, min_self_times, max_self_times, average_self_times
+
         return output
+
+    def _batch_process_traces(self):
+        for file in sorted(os.listdir(self.trace_file_directory)):
+            if self.trace_file_name in file:
+                timestamp = file.replace(f'{self.trace_file_name}_', '').replace('.log', '').replace('.json', '')
+                
+                if file.endswith('.log'):
+                    log_file = f'{self.trace_file_directory}/{file}'
+                    json_file = f'{self.trace_file_directory}/{self.trace_file_name}_{timestamp}.json'
+                    
+                    if os.path.exists(json_file):
+                        yield from self._process_trace_file(log_file, json_file)
+
+    def _process_trace_file(self, log_file, json_file):
+        with open(json_file, 'r') as f:
+            metadata = json.load(f)
+        
+        log_time_difference = metadata['log_time_difference']
+        method_signature_hash = {v: k for k, v in metadata['method_signature_hash'].items()}
+
+        with open(log_file, 'r') as f:
+            for line in f:
+                match = general_pattern.match(line)
+                if match:
+                    time, start_or_end, method = match.groups()
+                    time = int(time) + log_time_difference
+                    method = method_signature_hash.get(method, method)
+                    yield f'[{time}] {start_or_end} {method}'
+
+    def _process_line(self, line, call_stack, total_execution_times, self_execution_times, call_counts, min_self_times, max_self_times):
+        if re.match(enter_pattern, line):
+            match = enter_pattern.match(line)
+            if match:
+                timestamp, function = match.groups()
+                call_stack.append((function, int(timestamp)))
+                call_counts[function] += 1
+        elif re.match(exit_pattern, line):
+            match = exit_pattern.match(line)
+            if match:
+                timestamp, function = match.groups()
+                exit_time = int(timestamp)
+                if call_stack and call_stack[-1][0] == function:
+                    _, enter_time = call_stack.pop()
+                    duration = exit_time - enter_time
+
+                    total_execution_times[function] += duration
+                    min_self_times[function] = min(min_self_times[function], duration)
+                    max_self_times[function] = max(max_self_times[function], duration)
+
+                    if call_stack:
+                        parent_function, _ = call_stack[-1]
+                        self_execution_times[parent_function] -= duration
+
+                    self_execution_times[function] += duration
 
     @staticmethod
     def get_trace_data_well_formatted(trace_data_path: str) -> list[str]:
@@ -93,9 +121,10 @@ class PerformanceAnalysis:
 
         trace_data = {}
         trace_file_directory = os.path.dirname(trace_data_path)
+        trace_file_name = trace_data_path.replace(f'{trace_file_directory}/', '').replace('.log', '')
+        
         # Iterate over all files in the directory
         for file in os.listdir(trace_file_directory):
-            trace_file_name = trace_data_path.replace(f'{trace_file_directory}/', '').replace('.log', '')
             if trace_file_name in file:
                 # Check if file is a log file or a json file
                 timestamp = file.replace(f'{trace_file_name}_', '').replace('.log', '').replace('.json', '')
@@ -133,16 +162,3 @@ class PerformanceAnalysis:
             traces.extend(trace_data)
 
         return traces
-
-    @staticmethod
-    def convert_time_units(ns):
-        if ns < 1_000:
-            return f'{ns} ns'
-        elif ns < 1_000_000:
-            return f'{ns / 1_000:.3f} µs'
-        elif ns < 1_000_000_000:
-            return f'{ns / 1_000_000:.3f} ms'
-        elif ns < 60_000_000_000:
-            return f'{ns / 1_000_000_000:.3f} s'
-        else:
-            return f'{ns / 60_000_000_000:.3f} m'

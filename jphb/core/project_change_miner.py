@@ -12,7 +12,7 @@ from jphb.services.srcml_service import SrcMLService
 from jphb.services.llm_service import LLMService
 
 from jphb.utils.file_utils import FileUtils
-from jphb.utils.printer import Printer
+from jphb.utils.Logger import Logger
 
 
 class ProjectChangeMiner:
@@ -83,10 +83,7 @@ class ProjectChangeMiner:
                 "results", self.project_name, "commits", commit.hexsha
             )
             if os.path.exists(commit_folder) and not force:
-                Printer.success(
-                    f"({commit_index}/{total_commits}) Commit {commit.hexsha} already processed",
-                    num_indentations=self.printer_indent,
-                )
+                Logger.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} already processed', num_indentations=self.printer_indent)
                 continue
 
             # Create a folder for the commit if it does not exist
@@ -94,32 +91,27 @@ class ProjectChangeMiner:
 
             # Skip the merge commits
             if len(commit.parents) > 1:
-                Printer.warning(
-                    f"({commit_index}/{total_commits}) Skipping merge commit {commit.hexsha}",
-                    num_indentations=self.printer_indent,
-                )
+                Logger.warning(f'({commit_index}/{total_commits}) Skipping merge commit {commit.hexsha}', num_indentations=self.printer_indent)
+                continue
+
+            # Check the file changes in the commit
+            # If there is no file change in the commit on .java files, skip the commit
+            if not commit.stats.files or not any(str(file).endswith('.java') for file in commit.stats.files):
+                Logger.warning(f'({commit_index}/{total_commits}) No .java file changes in commit {commit.hexsha}', num_indentations=self.printer_indent)
                 continue
 
             try:
                 # Checkout the commit
                 repo.git.checkout(commit.hexsha, force=True)
             except:
-                self.__write_error(
-                    commit_folder, "git checkout", commit.hexsha, "None", []
-                )
-                Printer.error(
-                    f"({commit_index}/{total_commits}) Error in commit {commit.hexsha}",
-                    num_indentations=self.printer_indent,
-                )
+                self.__write_error(commit_folder, 'git checkout', commit.hexsha, 'None', [])
+                Logger.error(f'({commit_index}/{total_commits}) Error in commit {commit.hexsha}', num_indentations=self.printer_indent)
                 continue
 
             # Get the previous commit
             previous_commit = commit.parents[0] if commit.parents else None
             if not previous_commit:
-                Printer.error(
-                    f"({commit_index}/{total_commits}) No previous commit for commit {commit.hexsha}",
-                    num_indentations=self.printer_indent,
-                )
+                Logger.error(f'({commit_index}/{total_commits}) No previous commit for commit {commit.hexsha}', num_indentations=self.printer_indent)
                 continue
 
             # Get the changed .java files in the new commit
@@ -142,7 +134,7 @@ class ProjectChangeMiner:
 
             # Get candidate refactorings
             candidate_refactorings = refactoring_miner.get_candidate_refactorings(all_refactorings)
-            Printer.success(
+            Logger.success(
                 f"Commit {commit.hexsha} has {len(candidate_refactorings)} candidate refactorings.",
                 num_indentations=self.printer_indent,
             )
@@ -201,10 +193,7 @@ class ProjectChangeMiner:
 
                 num_successful_commits += 1
 
-            Printer.success(
-                f"({commit_index}/{total_commits}) Commit {commit.hexsha} processed successfully",
-                num_indentations=self.printer_indent,
-            )
+            Logger.success(f'({commit_index}/{total_commits}) Commit {commit.hexsha} processed successfully with {num_changed_methods} methods', num_indentations=self.printer_indent)
 
             # method_changes = {}
             # # Iterate over all changed .java files

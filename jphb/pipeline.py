@@ -12,7 +12,7 @@ from jphb.services.git_service import GitService
 from jphb.services.db_service import DBService
 from jphb.services.email_service import EmailService
 
-from jphb.utils.printer import Printer
+from jphb.utils.Logger import Logger
 from jphb.utils.file_utils import FileUtils
 
 class Pipeline:
@@ -36,10 +36,7 @@ class Pipeline:
         self.use_lttng = use_lttng
         self.use_llm = use_llm
 
-        if use_email_notification:
-            self.email_service = EmailService(project_name=self.project_name)
-        else:
-            self.email_service = None
+        self.email_service = EmailService(project_name=self.project_name) if use_email_notification else None
 
         self.db_service = DBService(use_cloud_db=use_cloud_db)
 
@@ -49,22 +46,22 @@ class Pipeline:
         if not FileUtils.is_path_exists(candidate_commits_file_path):
             # Step 1: Clone the project repository if it doesn't exist
             if not FileUtils.is_path_exists(self.project_path):
-                Printer.info(f'Cloning {self.project_name}...', bold=True)
+                Logger.info(f'Cloning {self.project_name}...', bold=True)
                 git_service = GitService(owner=self.git_info['owner'], repo_name=self.git_info['repo'])
                 cloned, num_commits, head_commit_hash = git_service.clone_repo(repo_path=self.project_path, branch=self.git_info['branch'])
                 if not cloned:
-                    Printer.error(f'Failed to clone {self.project_name}. Skipping...', bold=True, num_indentations=1)
+                    Logger.error(f'Failed to clone {self.project_name}. Skipping...', bold=True, num_indentations=1)
                     return
-
-                Printer.success(f'{self.project_name} cloned successfully.', bold=True, num_indentations=1)
-
+                
+                Logger.success(f'{self.project_name} cloned successfully.', bold=True, num_indentations=1)
+                
                 # Update the project information in the database
                 self.db_service.update_project(project_name=self.project_name,
                                                 head_commit=head_commit_hash,
                                                 num_total_commits=num_commits)
 
             # Step 2: Mine project changes
-            Printer.info('Mining project changes...', bold=True)
+            Logger.info('Mining project changes...', bold=True)
             pcm = ProjectChangeMiner(project_name=self.project_name, 
                                     project_path=self.project_path, 
                                     project_branch=self.git_info['branch'],
@@ -77,8 +74,8 @@ class Pipeline:
             # exit()
 
             # Step 3: Mine benchmark presence
-            Printer.separator()
-            Printer.info('Mining benchmark presence...', bold=True)
+            Logger.separator()
+            Logger.info('Mining benchmark presence...', bold=True)
             bpm = BenchmarkPresenceMiner(project_name=self.project_name,
                                         project_path=self.project_path,
                                         project_branch=self.git_info['branch'],
@@ -88,8 +85,8 @@ class Pipeline:
             num_commits_with_benchmark = bpm.mine()
 
             # Step 4: Candidate commits
-            Printer.separator()
-            Printer.info('Selecting candidate commits...', bold=True)
+            Logger.separator()
+            Logger.info('Selecting candidate commits...', bold=True)
             cc = CommitCandidator(project_name=self.project_name,
                                 project_path=self.project_path,
                                 project_git_info=self.git_info,
@@ -108,12 +105,12 @@ class Pipeline:
         else:
             candidate_commits = FileUtils.read_json_file(candidate_commits_file_path)
 
-        Printer.separator()
-        Printer.info(f'Found {len(candidate_commits)} candidate commits for {self.project_name}.', bold=True)
+        Logger.separator()
+        Logger.info(f'Found {len(candidate_commits)} candidate commits for {self.project_name}.', bold=True)
 
         # Step 5: For each candidate commit, execute the benchmark and get performance data
-        Printer.separator()
-        Printer.info('Executing benchmarks...', bold=True)
+        Logger.separator()
+        Logger.info('Executing benchmarks...', bold=True)
 
         sampling = Sampling(candidate_commits)
         N, sample_size, k, start = sampling.sample()
@@ -176,14 +173,14 @@ class Pipeline:
                                                 status=executed,
                                                 performance_data=performance_data if performance_data else {})
 
-            Printer.info(f'Commit {i + 1}/{N} processed. {sampled_count} out of {sample_size} required samples are available.', bold=True, num_indentations=1)
-            Printer.info(f'Execution time: {time.time() - start_time}', bold=True, num_indentations=1)
-            Printer.separator(num_indentations=1)
-
+            Logger.info(f'Commit {i + 1}/{N} processed. {sampled_count} out of {sample_size} required samples are available.', bold=True, num_indentations=1)
+            Logger.info(f'Execution time: {time.time() - start_time}', bold=True, num_indentations=1)
+            Logger.separator(num_indentations=1)
+            
             i += 1
 
         if sampled_count < sample_size:
-            Printer.warning(f'Only {sampled_count} suitable commits found out of requested {sample_size}')
+            Logger.warning(f'Only {sampled_count} suitable commits found out of requested {sample_size}')
 
         # Update the project information in the database
         self.db_service.update_project(project_name=self.project_name,

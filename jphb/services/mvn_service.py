@@ -8,6 +8,7 @@ from typing import Optional
 #     '17': '/usr/lib/jvm/java-17-openjdk-amd64',
 #     '21': '/usr/lib/jvm/java-21-openjdk-amd64'
 # }
+from jphb.utils.file_utils import FileUtils
 
 JAVA_HOME_PATHS = {
     "1.8": "/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home",
@@ -117,6 +118,16 @@ class MvnService:
             java_version = next_version
 
             retries += 1
+
+    @staticmethod
+    def clean_mvn_cache(cwd:str, directory: str) -> None:
+        subprocess.run(['mvn', 'dependency:purge-local-repository', '-DreResolve=false'], cwd=cwd, capture_output=True)
+        if FileUtils.is_path_exists(directory):
+            subprocess.run(['rm', '-rf', directory], cwd=cwd, capture_output=True)
+
+    @staticmethod
+    def remove_security_from_jar(jar_path: str) -> None:
+        subprocess.run(['zip', '-d', jar_path, 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'], capture_output=True)
     
     @staticmethod
     def update_java_home(java_version: str) -> dict:

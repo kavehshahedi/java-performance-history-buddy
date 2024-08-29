@@ -7,3 +7,4 @@ pymongo==4.8.0
 openai==1.40.1
 scikit-learn==1.5.1
 psutil==6.0.0
+loguru==0.7.2
