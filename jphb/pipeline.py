@@ -38,6 +38,8 @@ class Pipeline:
 
         if use_email_notification:
             self.email_service = EmailService(project_name=self.project_name)
+        else:
+            self.email_service = None
 
         self.db_service = DBService(use_cloud_db=use_cloud_db)
 
@@ -53,9 +55,9 @@ class Pipeline:
                 if not cloned:
                     Printer.error(f'Failed to clone {self.project_name}. Skipping...', bold=True, num_indentations=1)
                     return
-                
+
                 Printer.success(f'{self.project_name} cloned successfully.', bold=True, num_indentations=1)
-                
+
                 # Update the project information in the database
                 self.db_service.update_project(project_name=self.project_name,
                                                 head_commit=head_commit_hash,
@@ -69,7 +71,10 @@ class Pipeline:
                                     custom_benchmark=self.custom_benchmark,
                                     use_llm=self.use_llm,
                                     printer_indent=1)
-            num_mined_commits = pcm.mine(force=False)
+            num_mined_commits = pcm.mine(
+                force=False
+            )
+            # exit()
 
             # Step 3: Mine benchmark presence
             Printer.separator()
@@ -94,7 +99,7 @@ class Pipeline:
             # Save the candidate commits to the database
             self.db_service.save_candidate_commits(project_name=self.project_name,
                                                    candidate_commits=candidate_commits)
-            
+
             # Update the project information in the database
             self.db_service.update_project(project_name=self.project_name,
                                            num_candidate_commits=len(candidate_commits),
@@ -126,12 +131,17 @@ class Pipeline:
             # Check if the commit has already been executed
             db_performance_data = self.db_service.get_performance_data(project_name=self.project_name,
                                                                        commit_hash=candidate_commit['commit'])
-            if db_performance_data:
-                Printer.info(f'Commit {i + 1}/{N} already processed. Skipping...', bold=True, num_indentations=1)
-                Printer.separator(num_indentations=1)
-                i += 1
-                sampled_count += 1
-                continue
+
+            # if candidate_commit["commit"] != "16415766ddfaa183c01b5bc3d6e6c438b567c391":
+            #     i += 1
+            #     continue
+
+            # if db_performance_data:
+            #     Printer.info(f'Commit {i + 1}/{N} already processed. Skipping...', bold=True, num_indentations=1)
+            #     Printer.separator(num_indentations=1)
+            #     i += 1
+            #     sampled_count += 1
+            #     continue
 
             # Execute the benchmark
             executor = BenchmarkExecutor(project_name=self.project_name,
@@ -169,7 +179,7 @@ class Pipeline:
             Printer.info(f'Commit {i + 1}/{N} processed. {sampled_count} out of {sample_size} required samples are available.', bold=True, num_indentations=1)
             Printer.info(f'Execution time: {time.time() - start_time}', bold=True, num_indentations=1)
             Printer.separator(num_indentations=1)
-            
+
             i += 1
 
         if sampled_count < sample_size:
@@ -179,7 +189,7 @@ class Pipeline:
         self.db_service.update_project(project_name=self.project_name,
                                        sample_size=sample_size,
                                        sampled_count=sampled_count)
-        
+
         # Send an email notification (if enabled)
         if self.email_service:
             self.email_service.send_email(to_email=os.getenv('SMTP_TO_EMAIL', 'INVALID_EMAIL'),

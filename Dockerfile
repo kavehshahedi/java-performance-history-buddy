@@ -69,4 +69,5 @@ COPY toolchains.xml /root/.m2/toolchains.xml
 COPY toolchains.xml /home/kavehshahedi/.m2/toolchains.xml
 
 # Run main.py when the container launches
-ENTRYPOINT ["python", "main.py"]
+# ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT [ "./run_projects.sh" ]

@@ -20,7 +20,7 @@ class SrcMLService:
 
     def __init__(self) -> None:
         self.namespace = {'src': 'http://www.srcML.org/srcML/src'}
-    
+
     def get_methods(self, code: str, with_body: bool = False, remove_comments: bool = False) -> list[str]:
         """
         This method returns the methods in the given code.
@@ -69,7 +69,7 @@ class SrcMLService:
                 continue
 
         return methods
-    
+
     def remove_comments(self, code: str) -> str:
         """
         In this method, we remove the comments from the given code.
@@ -107,7 +107,7 @@ class SrcMLService:
         os.remove(output_file)
         os.remove(output_file + '.xml')
         return tree.getroot()
-    
+
     def __get_method_class(self, method: Union[ET.Element, None], root: Union[ET.Element, None]) -> str:
         """
         Given a method and the root of the XML tree, this method returns the class name of the method.
@@ -118,7 +118,7 @@ class SrcMLService:
 
         if root is None or method is None:
             return ''
-        
+
         for class_ in root.findall('.//src:class', self.namespace):
             class_start = int(class_.attrib[f'{{{POS_NS["pos"]}}}start'].split(':')[0])
             class_end = int(class_.attrib[f'{{{POS_NS["pos"]}}}end'].split(':')[0])
@@ -138,7 +138,7 @@ class SrcMLService:
                     class_name = ''.join(class_name_element.itertext()).strip()
 
                 return f'{package_name}.{class_name}' if package_name else class_name
-            
+
         return ''
 
     def __get_method_name(self, method: Union[ET.Element, None]) -> str:
@@ -151,7 +151,7 @@ class SrcMLService:
 
         if method is None:
             return ''
-        
+
         method_name_element = method.find('src:name', self.namespace)
         method_name = ''
         if method_name_element is not None:
@@ -166,9 +166,9 @@ class SrcMLService:
         method_parameters = ''
         if method_parameters_element is not None:
             method_parameters = ''.join(method_parameters_element.itertext()).replace('\n', '').strip()
-        
+
         return re.sub(' +', ' ', f'{method_return_type} {method_name}{method_parameters}').strip()
-    
+
     def __is_line_comment(self, line_number: int, root: ET.Element) -> bool:
         """
         This method checks if the given line number is in a comment.
@@ -182,3 +182,62 @@ class SrcMLService:
                 return True
 
         return False
+
+    def get_code_element_method_name(self, repo, line_number, commit, file_name):
+        readed_file = (
+            str(repo.git.show(f"{commit}:{file_name}"))
+            .encode("utf-8", errors="ignore")
+            .decode("utf-8")
+        )
+
+        method_name = self.get_method_name_by_start_line(readed_file, line_number)
+        return method_name
+
+        # # if code_element.startswith("package "):
+        # #     code_element = code_element[8:].strip()
+
+        # code_element = re.sub(r"\bpackage\b\s*", "", code_element)
+
+        # file_methods = self.get_methods(readed_file)
+        # for full_name in file_methods:
+        #     fm_name = full_name.split("(")[0].split(" ")[-1].strip()
+        #     fm_name_short = fm_name.split(".")[-1]
+        #     comparable_name = full_name.replace(fm_name, fm_name_short)
+        #     if comparable_name == code_element:
+        #         return full_name
+        #     else:
+        #         print(full_name, "###", code_element, "=================", comparable_name)
+        #         # exit()
+        #         return code_element
+
+    def get_method_name_by_start_line(self, code: str, line_number: int) -> str:
+        """
+        This method returns the method name of the method that contains the given line number.
+        """
+
+        root = self.__get_xml(code)
+
+        for method in root.findall('.//src:function', self.namespace):
+            method_start = int(method.attrib[f'{{{POS_NS["pos"]}}}start'].split(':')[0])
+            method_end = int(method.attrib[f'{{{POS_NS["pos"]}}}end'].split(':')[0])
+
+            if method_start <= line_number <= method_end:
+                class_name = self.__get_method_class(method, root)
+                method_name = self.__get_method_name(method)
+
+                m_name_only = method_name.split('(')[0]
+                m_name_only = m_name_only.split(' ')[-1]
+                m_name_only = m_name_only + '(' + method_name.split('(')[1]
+
+                m_signature = method_name.split('(')[0]
+                m_signature = ' '.join(m_signature.split(' ')[0:-1])
+
+                method_declaration = ''
+                if m_signature != '':
+                    method_declaration = f'{m_signature} '
+                if class_name != '':
+                    method_declaration += f'{class_name}.'
+
+                return f'{method_declaration}{m_name_only}'
+
+        return ''

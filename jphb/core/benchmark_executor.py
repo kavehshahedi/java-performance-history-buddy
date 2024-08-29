@@ -102,7 +102,9 @@ class BenchmarkExecutor:
             # If the Java version should be updated, update the pom.xml file
             if java_version['should_update_pom']:
                 pom_service = PomService(pom_source=os.path.join(self.project_path, 'pom.xml'))
+                pom_service_bench = PomService(pom_source=os.path.join(self.project_path, self.project_benchmark_directory, 'pom.xml'))
                 pom_service.set_java_version(self.java_version)
+                pom_service_bench.set_java_version(self.java_version)
 
             if self.project_benchmark_module:
                 # Check whether the benchmarks are buildable
@@ -115,7 +117,7 @@ class BenchmarkExecutor:
                 if not is_benchmark_buildable:
                     Printer.error(f'Benchmarks are not buildable', num_indentations=self.printer_indent+2)
                     return False, None
-                
+
                 Printer.success(f'Benchmarks are buildable', num_indentations=self.printer_indent+2)
             else:
                 # Check whether the project is buildable
@@ -128,7 +130,7 @@ class BenchmarkExecutor:
                     return False, None
 
                 Printer.success(f'Project is buildable', num_indentations=self.printer_indent+2)
-    
+
                 # Check whether the benchmarks are buildable
                 Printer.info(f'Checking if benchmarks are buildable...', num_indentations=self.printer_indent+1)
                 is_benchmark_buildable = self.__build_benchmarks(benchmark_directory=self.project_benchmark_directory,
@@ -149,16 +151,16 @@ class BenchmarkExecutor:
                 current_benchmark_directory_hash = FileUtils.get_folder_hash(os.path.join(self.project_path, self.project_benchmark_directory, 'src', 'main'))
             else:
                 previous_benchmark_directory_hash = FileUtils.get_folder_hash(os.path.join(self.project_path, self.project_benchmark_directory, 'src', 'main'))
-                
-        # If both benchmarks are not built, return    
+
+        # If both benchmarks are not built, return
         if not is_previous_benchmark_built and not is_current_benchmark_built:
             Printer.error(f'Both benchmarks are not built', num_indentations=self.printer_indent+1)
             return False, None
-        
+
         # Check if the benchmarks are the same
         has_same_benchmarks = (current_benchmark_directory_hash == previous_benchmark_directory_hash) # type: ignore
         Printer.info(f'Benchmarks are the same: {has_same_benchmarks}', num_indentations=self.printer_indent+1)
-        
+
         if is_previous_benchmark_built:
             if has_same_benchmarks and is_current_benchmark_built:
                 commit_to_use_for_benchmark = current_commit_hash
@@ -180,7 +182,7 @@ class BenchmarkExecutor:
                                                                             build_anyway=True,
                                                                             java_version=self.java_version)
             else: 
-                # NOTE: Check if the project should be built again 
+                # NOTE: Check if the project should be built again
                 # self.__build_project(commit_hash=current_commit_hash,
                 #                     build_anyway=True,
                 #                     java_version=self.java_version)
@@ -188,11 +190,11 @@ class BenchmarkExecutor:
                                         benchmark_commit_hash=current_commit_hash,
                                         build_anyway=True,
                                         java_version=self.java_version)
-                                
+
             if not status:
                 Printer.error(f'Benchmarks are not compatible with the other commit', num_indentations=self.printer_indent+1)
                 return False, None
-            
+
             Printer.success(f'Benchmarks are replaced with the other commit', num_indentations=self.printer_indent+1)
 
         # Wait a bit (2 seconds) after building the benchmarks for the files to be written
@@ -251,7 +253,7 @@ class BenchmarkExecutor:
 
             is_targeting, targets = self.__is_benchmark_targeting_changed_methods(changed_methods=changed_methods,
                                                                                   target_methods=tm_methods)
-            
+
             # If the benchmark is targeting the changed methods, add it to the chosen benchmarks for running
             if is_targeting:
                 chosen_benchmarks[tm_benchmark] = targets
@@ -316,7 +318,7 @@ class BenchmarkExecutor:
                                             benchmark_commit_hash=commit_hash_,
                                             build_anyway=True, # Since we need to run the benchmarks, we build them anyway
                                             java_version=self.java_version)
-                
+
             Printer.info('Running benchmarks...', num_indentations=self.printer_indent+1)
             performance_data = self.__run_benchmark_and_get_performance_data(benchmark_jar_path=benchmark_jar_path,
                                                                              config_directory=config_directory,
@@ -344,12 +346,12 @@ class BenchmarkExecutor:
 
         if commit_hash in build_history and not build_anyway:
             return build_history[commit_hash]
-        
+
         Printer.info(f'Building the project locally with Java {self.java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
         status, jv = mvn_service.install(cwd=self.project_path,
                                          java_version=java_version,
-                                         verbose=False,
+                                         verbose=True,
                                          retry_with_other_java_versions=True)
 
         # Save the result
@@ -376,7 +378,7 @@ class BenchmarkExecutor:
         # Check if the build has already been done
         if benchmark_commit_hash in build_history and not build_anyway:
             return build_history[benchmark_commit_hash]
-                
+
         # Basically, the baseline command has been indicated in MvnService class. If there is a custom command, it will be used.
         command = None
         cwd = os.path.join(self.project_path, benchmark_directory)
@@ -390,7 +392,7 @@ class BenchmarkExecutor:
         status, jv = mvn_service.package(cwd=cwd,
                                          custom_command=command,
                                          java_version=java_version,
-                                         verbose=False,
+                                         verbose=True,
                                          retry_with_other_java_versions=True)
 
         # Save the result
@@ -403,7 +405,7 @@ class BenchmarkExecutor:
                 self.java_version = jv
 
         return status
-    
+
     def __build_benchmarks_with_module(self, benchmark_commit_hash: str,
                                        module: str,
                                        java_version:str = '11',
@@ -415,19 +417,19 @@ class BenchmarkExecutor:
         # Check if the build has already been done
         if benchmark_commit_hash in build_history and not build_anyway:
             return build_history[benchmark_commit_hash]
-        
+
         Printer.info(f'Building the benchmarks with custom module locally with Java {java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
         status, jv = mvn_service.package_module(cwd=self.project_path,
                                                 module=module,
                                                 java_version=java_version,
-                                                verbose=False,
+                                                verbose=True,
                                                 retry_with_other_java_versions=True)
 
         # Save the result
         build_history[benchmark_commit_hash] = status
         FileUtils.write_json_file(history_path, build_history)
-
+ 
         # Update the Java version is the build is successful
         if status:
             if jv != self.java_version:
@@ -451,22 +453,33 @@ class BenchmarkExecutor:
 
         else:
             benchmark_jar_path = os.path.join(self.project_path, benchmark_directory, 'target', f'{benchmark_name}')
-                
+
         while not benchmark_jar_path:
             if not candidate_jars:
                 return '', []
-            
+
             candidate_jar = candidate_jars.pop()
             try:
                 mvn_service = MvnService()
                 env = mvn_service.update_java_home(java_version)
+                subprocess.run(
+                    [
+                        "zip",
+                        "-d",
+                        candidate_jar,
+                        "META-INF/*.SF",
+                        "META-INF/*.RSA",
+                        "META-INF/*.DSA",
+                    ],
+                    capture_output=True, shell=False, env=env
+                )
                 process = subprocess.run([
                         'java',
                         '-jar',
                         candidate_jar,
                         '-l'
                     ], capture_output=True, shell=False, timeout=2, env=env)
-                
+
                 if process.returncode ==0:
                     output = process.stdout.decode('utf-8').strip()
                     if 'benchmarks:' in output.lower():
@@ -488,26 +501,26 @@ class BenchmarkExecutor:
                     benchmark_jar_path,
                     '-l'
                 ], capture_output=True, shell=False, timeout=2, env=env)
-            
+
             if process.returncode != 0:
                 return '', []
-            
+
             output = process.stdout.decode('utf-8').strip()
             lines = output.splitlines()
-            
+
             # Find the index of the line starting with 'Benchmarks:'
             start_index = next((i for i, line in enumerate(lines) if line.lower().startswith('benchmarks:')), None)
-            
+
             if start_index is not None:
                 # Extract the benchmark names starting from the line after 'Benchmarks:'
                 benchmark_names = [line.strip() for line in lines[start_index + 1:] if line.strip()]
                 return benchmark_jar_path, benchmark_names
             else:
                 return '', []
-            
+
         except:
             return '', []
-    
+
     def __has_benchmark_previously_executed(self, hash_to_check: str) -> Tuple[bool, list]:
         history_path = os.path.join('results', self.project_name, 'benchmark_history.json')
         history = FileUtils.read_json_file(history_path)
@@ -531,7 +544,7 @@ class BenchmarkExecutor:
                              benchmark_name: str) -> Union[NoneType, list[str]]:
         log_path = os.path.join('results', self.project_name, 'commits', commit_hash, 'visited', f'{benchmark_name}.log')
         config_path = os.path.join('results', self.project_name, 'commits', commit_hash, 'visited', f'{benchmark_name}.yaml')
-        
+
         # Create a directory for the log and config files. If the directory already exists, continue.
         FileUtils.create_directory(os.path.dirname(log_path))
 
@@ -564,7 +577,7 @@ class BenchmarkExecutor:
             '-r', '1s',
             benchmark_name
         ]
-        
+
         try:
             process = subprocess.run(command, capture_output=True, shell=False, env=env, timeout=60)
 
@@ -676,15 +689,28 @@ class BenchmarkExecutor:
             # Run the benchmark
             mvn_service = MvnService()
             env = mvn_service.update_java_home(java_version)
+            subprocess.run(
+                [
+                    "zip",
+                    "-d",
+                    benchmark_jar_path,
+                    "META-INF/*.SF",
+                    "META-INF/*.RSA",
+                    "META-INF/*.DSA",
+                ],
+                capture_output=True,
+                shell=False,
+                env=env,
+            )
             process = subprocess.Popen([
                 'java',
                 '-Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector',
                 f'-javaagent:{self.jib_path}=config={config_path}',
                 '-jar',
                 benchmark_jar_path,
-                '-f', '3',
+                '-f', '1',
                 '-wi', '0',
-                '-i', '5',
+                '-i', '1',
                 '-rf', 'json',
                 '-rff', os.path.join(config_directory, f'{benchmark_name}.json'),
                 benchmark_name
@@ -718,6 +744,7 @@ class BenchmarkExecutor:
             # Check if the process is successful
             if process.returncode != 0:
                 Printer.error(f'Error while running the benchmark {benchmark_name}', num_indentations=self.printer_indent+1)
+                print(process.stderr.read().decode('utf-8'))
                 return None
 
             # Analyze the performance
@@ -725,13 +752,13 @@ class BenchmarkExecutor:
             performance_data[benchmark_name] = method_performances
 
         return performance_data
-    
+
     def update_java_version_everywhere(self) -> None:
         for root, _, files in os.walk(self.project_path):
             for file in files:
                 if file == 'pom.xml':
                     pom_path = os.path.join(root, file)
-                    
+
                     pom_service = PomService(pom_source=pom_path)
                     current_version = pom_service.get_java_version()
 

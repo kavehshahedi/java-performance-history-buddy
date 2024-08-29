@@ -8,7 +8,7 @@
       <vendor>openjdk</vendor>
     </provides>
     <configuration>
-      <jdkHome>/usr/lib/jvm/java-8-openjdk-amd64</jdkHome>
+      <jdkHome>/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home</jdkHome>
     </configuration>
   </toolchain>
 
@@ -20,7 +20,7 @@
       <vendor>openjdk</vendor>
     </provides>
     <configuration>
-      <jdkHome>/usr/lib/jvm/java-11-openjdk-amd64</jdkHome>
+      <jdkHome>/opt/homebrew/Cellar/openjdk@11/11.0.21/libexec/openjdk.jdk/Contents/Home</jdkHome>
     </configuration>
   </toolchain>
 
@@ -32,7 +32,7 @@
       <vendor>openjdk</vendor>
     </provides>
     <configuration>
-      <jdkHome>/usr/lib/jvm/java-17-openjdk-amd64</jdkHome>
+      <jdkHome>/opt/homebrew/Cellar/openjdk@17/17.0.9/libexec/openjdk.jdk/Contents/Home</jdkHome>
     </configuration>
   </toolchain>
 
@@ -44,7 +44,7 @@
       <vendor>openjdk</vendor>
     </provides>
     <configuration>
-      <jdkHome>/usr/lib/jvm/java-21-openjdk-amd64</jdkHome>
+      <jdkHome>/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home</jdkHome>
     </configuration>
   </toolchain>
 </toolchains>
