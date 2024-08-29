@@ -599,9 +599,18 @@ class BenchmarkExecutor:
     def __is_benchmark_targeting_changed_methods(self, changed_methods: dict[str, list[str]], # The list of changed methods in the commit
                                                  target_methods: list[str] # The list of methods that the benchmark executes
                                                  ) -> Tuple[bool, dict[str, list[str]]]:
+        
+        def normalize_method_name(method: str) -> str:
+            # Remove parameters
+            method = method.split('(')[0].strip()
+            # Get the last part of the method name (in case it includes class name)
+            method = method.split()[-1].strip()
+            # Replace $ with . for inner classes
+            method = method.replace('$', '.')
+            return method
+
         # Preprocess the target functions once and store the results in a set
-        tf = {f.split('(')[0].strip().split(' ')[-1].strip() for f in target_methods}
-        tf = {f.split('$')[0] for f in tf}
+        tf = {normalize_method_name(f) for f in target_methods}
 
         # We have a reduced version of target functions, which contains only the method names without their declarations
         tf_reduced = {f.split('.')[-1] for f in tf}
@@ -610,7 +619,7 @@ class BenchmarkExecutor:
         for commit_hash, methods in changed_methods.items():
             # Use set comprehension to directly add the matching methods
             for method_ in methods:
-                shortened = method_.split('(')[0].strip().split(' ')[-1].strip()
+                shortened = normalize_method_name(method_)
                 if '.' in shortened:
                     if shortened in tf:
                         chosen_methods[commit_hash].append(method_)
