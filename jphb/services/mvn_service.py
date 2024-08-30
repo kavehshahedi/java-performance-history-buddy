@@ -102,12 +102,18 @@ class MvnService:
                 return True, java_version
 
             # If regular maven fails, try with mvnw
-            mvnw_command = ['./mvnw'] + command[1:] if not parent_mvn_wrapper else ['../mvnw'] + command[1:]
-
-            process = subprocess.run(mvnw_command, cwd=cwd, capture_output=not verbose, shell=is_shell, timeout=timeout, env=env)
-
-            if process.returncode == 0:
-                return True, java_version
+            mvnw_path = os.path.join(cwd, '../mvnw') if parent_mvn_wrapper else os.path.join(cwd, 'mvnw')
+            if os.path.isfile(mvnw_path):
+                # If regular maven fails, try with mvnw
+                mvnw_command = ['../mvnw'] if parent_mvn_wrapper else ['./mvnw']
+                mvnw_command += command[1:]  # Add the rest of the command arguments
+                
+                try:
+                    process = subprocess.run(mvnw_command, cwd=cwd, capture_output=not verbose, shell=is_shell, timeout=timeout, env=env)
+                    if process.returncode == 0:
+                        return True, java_version
+                except:
+                    pass
 
             if not retry_with_other_java_versions or retries >= MAX_NUM_RETRIES:
                 return False, java_version
