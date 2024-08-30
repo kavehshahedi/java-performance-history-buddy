@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import time
 import sys
+import re
 
 import psutil
 
@@ -599,26 +600,57 @@ class BenchmarkExecutor:
     def __is_benchmark_targeting_changed_methods(self, changed_methods: dict[str, list[str]], # The list of changed methods in the commit
                                                  target_methods: list[str] # The list of methods that the benchmark executes
                                                  ) -> Tuple[bool, dict[str, list[str]]]:
-        # Preprocess the target functions once and store the results in a set
-        tf = {f.split('(')[0].strip().split(' ')[-1].strip() for f in target_methods}
-        tf = {f.split('$')[0] for f in tf}
+        
+        def normalize_method_name(method: str) -> str:
+            # Remove parameters but keep generic type information
+            method = method.split('(')[0]
+            
+            # Handle array notation
+            method = method.replace("[]", "")
+            
+            # Split into parts (return type, class name, method name)
+            parts = method.split()
+            if len(parts) > 1:
+                method_name = '.'.join(parts[-1:])  # Include class name and method name
+            else:
+                method_name = parts[0]
+            
+            # Replace $ with . for inner classes
+            method_name = method_name.replace('$', '.')
+            
+            # Remove synthetic method suffixes but keep generic type info
+            method_name = re.sub(r'(\.\$\w+)(?=<|$)', '', method_name)
+            
+            # Handle constructor and static initializer methods
+            method_name = method_name.replace(".<init>", ".constructor")
+            method_name = method_name.replace(".<clinit>", ".static_initializer")
+            
+            # Remove generic type information for comparison
+            method_name = re.sub(r'<[^>]+>', '', method_name)
+            
+            return method_name.lower()  # Convert to lowercase for case-insensitive comparison
+        
+        # Normalize target methods
+        tf = {normalize_method_name(f) for f in target_methods}
+        
+        # We'll keep a set of method names without package info for fallback matching
+        tf_reduced = {m.split('.')[-1] for m in tf}
 
-        # We have a reduced version of target functions, which contains only the method names without their declarations
-        tf_reduced = {f.split('.')[-1] for f in tf}
-
-        chosen_methods = {commit_hash: [] for commit_hash in changed_methods.keys()}
+        chosen_methods = {commit_hash: [] for commit_hash in changed_methods}
+        
         for commit_hash, methods in changed_methods.items():
-            # Use set comprehension to directly add the matching methods
-            for method_ in methods:
-                shortened = method_.split('(')[0].strip().split(' ')[-1].strip()
-                if '.' in shortened:
-                    if shortened in tf:
-                        chosen_methods[commit_hash].append(method_)
+            for method in methods:
+                normalized = normalize_method_name(method)
+                
+                if '.' in normalized:
+                    if normalized in tf:
+                        chosen_methods[commit_hash].append(method)
                 else:
-                    if shortened in tf_reduced:
-                        chosen_methods[commit_hash].append(method_)
+                    if normalized in tf_reduced:
+                        chosen_methods[commit_hash].append(method)
 
-        return len(list(chosen_methods.values())[0]) > 0, chosen_methods
+
+        return any(methods for methods in chosen_methods.values()), chosen_methods
 
     def __minimize_and_distribute_methods(self, benchmarks: dict[str, dict[str, dict[str, Any]]]) -> dict[str, dict[str, dict[str, list[str]]]]:
         # Define a threshold for what counts as "significantly higher" in duration
@@ -733,7 +765,7 @@ class BenchmarkExecutor:
             mvn_service = MvnService()
             env = mvn_service.update_java_home(java_version)
             MvnService.remove_security_from_jar(benchmark_jar_path)
-            process = subprocess.Popen([
+            process = subprocess.run([
                 'java',
                 f'-javaagent:{self.jib_path}=config={config_path}',
                 '-jar',
@@ -744,29 +776,7 @@ class BenchmarkExecutor:
                 '-rf', 'json',
                 '-rff', jmh_json_path,
                 benchmark_name
-            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False, env=env)
-
-            # Monitor the process
-            usage_duration = 0
-            while process.poll() is None:
-                mem_info = psutil.virtual_memory()
-                swap_info = psutil.swap_memory()
-                total_available = mem_info.available + swap_info.free
-                mem_usage = psutil.Process(process.pid).memory_info().rss
-                mem_usage_gb = mem_usage / 1024 / 1024 / 1024
-
-                if mem_usage > total_available * 0.95:
-                    if usage_duration < 5:
-                        usage_duration += 1
-                        Logger.warning(f'Memory usage is too high: {mem_usage_gb}GB...', num_indentations=self.printer_indent+1)
-                    else:
-                        Logger.error(f'Memory usage is too high: {mem_usage_gb}GB. Terminating...', num_indentations=self.printer_indent+1)
-                        process.kill()
-                        return None
-                else:
-                    usage_duration = 0
-
-                time.sleep(1)
+            ], capture_output=True, shell=False, env=env)
 
             # Stop the LTTng tracing (if enabled)
             if self.use_lttng:

@@ -2,6 +2,8 @@ import re
 import os
 import json
 from collections import deque, defaultdict
+from scipy import stats
+import numpy as np
 
 # Regular expressions for parsing trace lines
 general_pattern = re.compile(r'\[(\d+)\] (S|E) (.+)')
@@ -13,38 +15,72 @@ class PerformanceAnalysis:
         self.trace_data_path = trace_data_path
         self.trace_file_directory = os.path.dirname(trace_data_path)
         self.trace_file_name = trace_data_path.replace(f'{self.trace_file_directory}/', '').replace('.log', '')
+        self.z_threshold = 3.0  # Z-score threshold for outlier removal
 
     def analyze(self) -> dict:
-        total_execution_times = defaultdict(int)
-        self_execution_times = defaultdict(int)
+        total_times = defaultdict(list)
+        self_times = defaultdict(list)
         call_counts = defaultdict(int)
-        min_self_times = defaultdict(lambda: float('inf'))
-        max_self_times = defaultdict(lambda: float('-inf'))
 
         call_stack = deque()
-        
-        for line in self._batch_process_traces():
-            self._process_line(line, call_stack, total_execution_times, self_execution_times, call_counts, min_self_times, max_self_times)
 
-        # Calculate average self time
-        average_self_times = {function: self_execution_times[function] / call_counts[function]
-                              for function in self_execution_times}
+        for line in self._batch_process_traces():
+            self._process_line(line, call_stack, total_times, self_times, call_counts)
 
         output = {}
-        for function in total_execution_times:
-            output[function] = {
-                'total_execution_time': total_execution_times[function],
-                'self_execution_time': self_execution_times[function],
-                'average_self_time': average_self_times[function],
-                'cumulative_execution_time': total_execution_times[function],
-                'min_execution_time': min_self_times[function],
-                'max_execution_time': max_self_times[function],
-                'call_count': call_counts[function]
-            }
-
-        del total_execution_times, self_execution_times, call_counts, min_self_times, max_self_times, average_self_times
+        for function in total_times:
+            cleaned_total_times = self._remove_outliers(total_times[function])
+            cleaned_self_times = self._remove_outliers(self_times[function])
+            
+            if cleaned_total_times and cleaned_self_times:  # Check if lists are not empty after outlier removal
+                output[function] = {
+                    'total_execution_time': int(np.sum(cleaned_total_times)),
+                    'self_execution_time': int(np.sum(cleaned_self_times)),
+                    'average_self_time': float(np.mean(cleaned_self_times)),
+                    'cumulative_execution_time': int(np.sum(cleaned_total_times)),
+                    'min_execution_time': int(np.min(cleaned_total_times)),
+                    'max_execution_time': int(np.max(cleaned_total_times)),
+                    'call_count': len(cleaned_total_times)  # This is now the count after outlier removal
+                }
+            else:
+                # Handle the case where all data points were considered outliers
+                output[function] = {
+                    'total_execution_time': 0,
+                    'self_execution_time': 0,
+                    'average_self_time': 0,
+                    'cumulative_execution_time': 0,
+                    'min_execution_time': 0,
+                    'max_execution_time': 0,
+                    'call_count': 0
+                }
 
         return output
+
+    def _remove_outliers(self, data):
+        if len(data) < 2:  # Need at least 2 data points to calculate z-score
+            return data
+        z_scores = np.abs(stats.zscore(data))
+        return [d for d, z in zip(data, z_scores) if z < self.z_threshold]
+
+    def _process_line(self, line, call_stack, total_times, self_times, call_counts):
+        if (match := re.match(enter_pattern, line)):
+            timestamp, function = match.groups()
+            call_stack.append((function, int(timestamp), 0))  # function, start time, child time
+            call_counts[function] += 1
+        elif (match := re.match(exit_pattern, line)):
+            timestamp, function = match.groups()
+            exit_time = int(timestamp)
+            if call_stack and call_stack[-1][0] == function:
+                _, start_time, child_time = call_stack.pop()
+                total_time = exit_time - start_time
+                self_time = total_time - child_time
+
+                total_times[function].append(total_time)
+                self_times[function].append(self_time)
+
+                if call_stack:
+                    parent_function, parent_start, parent_child_time = call_stack.pop()
+                    call_stack.append((parent_function, parent_start, parent_child_time + total_time))
 
     def _batch_process_traces(self):
         for file in sorted(os.listdir(self.trace_file_directory)):
@@ -73,32 +109,6 @@ class PerformanceAnalysis:
                     time = int(time) + log_time_difference
                     method = method_signature_hash.get(method, method)
                     yield f'[{time}] {start_or_end} {method}'
-
-    def _process_line(self, line, call_stack, total_execution_times, self_execution_times, call_counts, min_self_times, max_self_times):
-        if re.match(enter_pattern, line):
-            match = enter_pattern.match(line)
-            if match:
-                timestamp, function = match.groups()
-                call_stack.append((function, int(timestamp)))
-                call_counts[function] += 1
-        elif re.match(exit_pattern, line):
-            match = exit_pattern.match(line)
-            if match:
-                timestamp, function = match.groups()
-                exit_time = int(timestamp)
-                if call_stack and call_stack[-1][0] == function:
-                    _, enter_time = call_stack.pop()
-                    duration = exit_time - enter_time
-
-                    total_execution_times[function] += duration
-                    min_self_times[function] = min(min_self_times[function], duration)
-                    max_self_times[function] = max(max_self_times[function], duration)
-
-                    if call_stack:
-                        parent_function, _ = call_stack[-1]
-                        self_execution_times[parent_function] -= duration
-
-                    self_execution_times[function] += duration
 
     @staticmethod
     def get_trace_data_well_formatted(trace_data_path: str) -> list[str]:
