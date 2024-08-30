@@ -770,9 +770,9 @@ class BenchmarkExecutor:
                 f'-javaagent:{self.jib_path}=config={config_path}',
                 '-jar',
                 benchmark_jar_path,
-                '-f', '1',
+                '-f', '3',
                 '-wi', '0',
-                '-i', '2',
+                '-i', '5',
                 '-rf', 'json',
                 '-rff', jmh_json_path,
                 benchmark_name
