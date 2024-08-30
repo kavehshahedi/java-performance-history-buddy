@@ -12,8 +12,8 @@ from jphb.utils.file_utils import FileUtils
 
 JAVA_HOME_PATHS = {
     "1.8": "/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home",
-    "11": "/opt/homebrew/Cellar/openjdk@11/11.0.21/libexec/openjdk.jdk/Contents/Home",
-    "17": "/opt/homebrew/Cellar/openjdk@17/17.0.9/libexec/openjdk.jdk/Contents/Home",
+    "11": "/opt/homebrew/Cellar/openjdk@11/11.0.24/libexec/openjdk.jdk/Contents/Home",
+    "17": "/opt/homebrew/Cellar/openjdk@17/17.0.12/libexec/openjdk.jdk/Contents/Home",
     "21": "/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home",
 }
 
