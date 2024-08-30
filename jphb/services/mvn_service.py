@@ -33,7 +33,7 @@ class MvnService:
         if custom_command is not None:
             command = custom_command
 
-        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout)
+        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout, False)
 
     def package(self, cwd: str,
                 custom_command: Optional[list] = None,
@@ -51,7 +51,7 @@ class MvnService:
         if custom_command is not None:
             command = custom_command
 
-        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout)
+        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout, True)
     
     def package_module(self, cwd: str,
                 module: str,
@@ -69,7 +69,7 @@ class MvnService:
             'package'
         ]
 
-        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout)
+        return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout, False)
 
     def __run_mvn_command(self, cwd: str,
                           command: list,
@@ -77,7 +77,8 @@ class MvnService:
                           verbose: bool,
                           is_shell: bool,
                           retry_with_other_java_versions: bool,
-                          timeout: int) -> tuple[bool, str]:
+                          timeout: int,
+                          parent_mvn_wrapper: bool) -> tuple[bool, str]:
         
         COMMAND_ARGS = [
             '-DskipTests',
@@ -94,7 +95,16 @@ class MvnService:
         while True:
             env = MvnService.update_java_home(java_version)
 
+            # Try with regular maven command
             process = subprocess.run(command, cwd=cwd, capture_output=not verbose, shell=is_shell, timeout=timeout, env=env)
+
+            if process.returncode == 0:
+                return True, java_version
+
+            # If regular maven fails, try with mvnw
+            mvnw_command = ['./mvnw'] + command[1:] if not parent_mvn_wrapper else ['../mvnw'] + command[1:]
+
+            process = subprocess.run(mvnw_command, cwd=cwd, capture_output=not verbose, shell=is_shell, timeout=timeout, env=env)
 
             if process.returncode == 0:
                 return True, java_version
