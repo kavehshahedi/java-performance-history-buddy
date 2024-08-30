@@ -185,4 +185,4 @@ class Pipeline:
                                     subject=f'JPHB Pipeline - {self.project_name} (Completed)',
                                     message=f"""The JPHB pipeline for {self.project_name} has been completed successfully.
                                     \nSample Size: {sample_size}
-                                    \nSampled Count: {sampled_count})""")
+                                    \nSampled Count: {sampled_count}""")
