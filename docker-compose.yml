@@ -9,6 +9,7 @@ services:
       - "80:80"
     volumes:
       - /home/kavehshahedi/jphb_data:/app/results
+      - /home/kavehshahedi/jphb_projects:/app/projects
     deploy:
       resources:
         limits:
