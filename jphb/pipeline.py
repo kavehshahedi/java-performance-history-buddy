@@ -129,7 +129,10 @@ class Pipeline:
                 Logger.info(f'Commit {i + 1}/{N} already processed. Skipping...', bold=True, num_indentations=1)
                 Logger.separator(num_indentations=1)
                 i += 1
-                sampled_count += 1
+                
+                if db_performance_data['status']:
+                    sampled_count += 1
+
                 continue
 
             # Execute the benchmark
