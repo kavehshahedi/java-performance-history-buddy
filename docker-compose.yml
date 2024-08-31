@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  jphb:
+    image: gcr.io/perf2vec-experiments/jphb
+    container_name: jphb-container
+    pull_policy: always
+    ports:
+      - "80:80"
+    volumes:
+      - /home/kavehshahedi/jphb_data:/app/results
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+    command: ${PROGRAM} --cloud-db --email
+    environment:
+      - DOCKER_MEMORY_SWAP=16g
+      - PROGRAM
