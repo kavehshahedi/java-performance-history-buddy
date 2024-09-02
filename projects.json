@@ -105,7 +105,11 @@
         },
         "name": "zipkin",
         "path": "zipkin",
-        "target_package": "zipkin"
+        "target_package": "zipkin",
+        "custom_benchmark": {
+            "directory": "benchmarks",
+            "module": "benchmarks"
+        }
     },
     {
         "git":{
