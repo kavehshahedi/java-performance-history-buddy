@@ -81,6 +81,7 @@ class MvnService:
                           parent_mvn_wrapper: bool) -> tuple[bool, str]:
         
         COMMAND_ARGS = [
+            '-q',
             '-DskipTests',
             '-Dmaven.javadoc.skip=true',
             '-Dcheckstyle.skip=true',
