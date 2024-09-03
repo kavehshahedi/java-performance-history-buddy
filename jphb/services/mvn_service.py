@@ -143,9 +143,25 @@ class MvnService:
     @staticmethod
     def update_java_home(java_version: str) -> dict:
         env = os.environ.copy()
-        if java_version in JAVA_HOME_PATHS:
-            java_home = JAVA_HOME_PATHS[java_version]
+
+        # Check if java version is a float
+        try:
+            float(java_version)
+        except:
+            return env
+        
+        # Convert version strings to floats for comparison
+        requested_version = float(java_version.replace('1.', ''))
+        available_versions = [float(v.replace('1.', '')) for v in JAVA_HOME_PATHS.keys()]
+        
+        # Find the closest available version that is >= requested version
+        selected_version = min((v for v in available_versions if v >= requested_version), default=None)
+        
+        if selected_version:
+            # Convert back to string format
+            selected_version_str = f'1.{selected_version}' if selected_version < 9 else str(int(selected_version))
+            java_home = JAVA_HOME_PATHS[selected_version_str]
             env['JAVA_HOME'] = java_home
             env['PATH'] = f"{java_home}/bin:" + env['PATH']
-
+                
         return env
