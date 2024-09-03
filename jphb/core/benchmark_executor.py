@@ -35,11 +35,16 @@ class BenchmarkExecutor:
 
         self.use_lttng = kwargs.get('use_lttng', False)
 
+    def __clean_checkout(self, commit_hash: str) -> None:
+        self.repo.git.clean('-fdx')
+        self.repo.git.reset('--hard')
+        self.repo.git.checkout(commit_hash, force=True)
+
     def __replace_benchmarks(self, from_commit_hash: str, to_commit_hash: str, benchmark_directory: str) -> None:
-        self.repo.git.checkout(from_commit_hash, force=True)
+        self.__clean_checkout(from_commit_hash)
         temp_benchmark_dir = os.path.join('/tmp', benchmark_directory)
         shutil.copytree(os.path.join(self.project_path, benchmark_directory), temp_benchmark_dir)
-        self.repo.git.checkout(to_commit_hash, force=True)
+        self.__clean_checkout(to_commit_hash)
         shutil.rmtree(os.path.join(self.project_path, benchmark_directory))
         shutil.copytree(temp_benchmark_dir, os.path.join(self.project_path, benchmark_directory))
         shutil.rmtree(temp_benchmark_dir)
@@ -98,7 +103,7 @@ class BenchmarkExecutor:
             Logger.info(f'Checking out to {"current" if commit_hash == current_commit_hash else "previous"} commit...', num_indentations=self.printer_indent)
 
             # Checkout the commit
-            self.repo.git.checkout(commit_hash, force=True)
+            self.__clean_checkout(commit_hash)
 
             # If the Java version should be updated, update the pom.xml file
             if java_version['should_update_pom']:
@@ -296,7 +301,7 @@ class BenchmarkExecutor:
             # Checkout the commit. If already checked out, no need to checkout again
 
             if commit_hash_ != current_commit_hash:
-                self.repo.git.checkout(commit_hash_, force=True)
+                self.__clean_checkout(commit_hash_)
 
                 # If the Java version should be updated, update the pom.xml file
                 if java_version['should_update_pom']:
