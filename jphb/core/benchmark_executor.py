@@ -8,13 +8,12 @@ import time
 import sys
 import re
 
-import psutil
-
 from jphb.services.yaml_service import YamlCreator
 
 from jphb.services.pom_service import PomService
 from jphb.services.mvn_service import MvnService
 from jphb.services.lttng_service import LTTngService
+from jphb.services.project_modification_service import ProjectModificationService
 
 from jphb.utils.file_utils import FileUtils
 from jphb.utils.Logger import Logger
@@ -355,6 +354,11 @@ class BenchmarkExecutor:
         if commit_hash in build_history and not build_anyway:
             return build_history[commit_hash]
         
+        # Modify the project (if there is any special modification)
+        modification_service = ProjectModificationService(project_name=self.project_name,
+                                                          project_path=self.project_path)
+        modification_service.fix_issues()
+        
         Logger.info(f'Building the project locally with Java {self.java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
         mvn_service.clean_mvn_cache(cwd=self.project_path, directory=os.path.join(self.project_path, self.project_benchmark_directory, 'target'))
@@ -387,6 +391,11 @@ class BenchmarkExecutor:
         # Check if the build has already been done
         if benchmark_commit_hash in build_history and not build_anyway:
             return build_history[benchmark_commit_hash]
+        
+        # Modify the project (if there is any special modification)
+        modification_service = ProjectModificationService(project_name=self.project_name,
+                                                          project_path=self.project_path)
+        modification_service.fix_issues()
                 
         # Basically, the baseline command has been indicated in MvnService class. If there is a custom command, it will be used.
         command = None
@@ -426,6 +435,11 @@ class BenchmarkExecutor:
         # Check if the build has already been done
         if benchmark_commit_hash in build_history and not build_anyway:
             return build_history[benchmark_commit_hash]
+        
+        # Modify the project (if there is any special modification)
+        modification_service = ProjectModificationService(project_name=self.project_name,
+                                                          project_path=self.project_path)
+        modification_service.fix_issues()
         
         Logger.info(f'Building the benchmarks with custom module locally with Java {java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
