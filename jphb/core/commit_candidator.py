@@ -18,6 +18,8 @@ class CommitCandidator:
         self.project_git_info = project_git_info
         self.candidate_commits = []
 
+        self.custom_benchmark = kwargs.get('custom_benchmark', None)
+
         self.printer_indent = kwargs.get('printer_indent', 0)
 
     def select(self, save_to_file: bool = True) -> list:
@@ -112,7 +114,8 @@ class CommitCandidator:
                 'commit_message': commit_message,
                 'jmh_dependency': {
                     'benchmark_directory': jmh_dependency.get('benchmark_directory', ''),
-                    'benchmark_name': jmh_dependency.get('benchmark_name', '')
+                    'benchmark_name': jmh_dependency.get('benchmark_name', ''),
+                    'benchmark_module': self.custom_benchmark['module'] if (self.custom_benchmark and 'module' in self.custom_benchmark) else None,
                 },
                 'method_changes': method_changes,
                 'java_version': {

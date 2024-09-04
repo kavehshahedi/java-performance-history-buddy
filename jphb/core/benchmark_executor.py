@@ -53,8 +53,7 @@ class BenchmarkExecutor:
                 previous_commit_hash: str,
                 changed_methods: dict[str, list[str]],
                 target_package: str,
-                java_version: dict,
-                custom_benchmark: Optional[dict] = None) -> Tuple[bool, Optional[dict]]:
+                java_version: dict) -> Tuple[bool, Optional[dict]]:
         """
         Execute the benchmarks for the given project
         Steps:
@@ -76,12 +75,9 @@ class BenchmarkExecutor:
         """
 
         # Variables
-        self.project_benchmark_directory = jmh_dependency['benchmark_directory']
-        self.project_benchmark_name = jmh_dependency['benchmark_name']
-        self.project_benchmark_module = None
-        if custom_benchmark:
-            self.project_benchmark_directory = custom_benchmark.get('directory', self.project_benchmark_directory)
-            self.project_benchmark_module = custom_benchmark.get('module', None)
+        self.project_benchmark_directory = jmh_dependency.get('benchmark_directory', '')
+        self.project_benchmark_name = jmh_dependency.get('benchmark_name', '')
+        self.project_benchmark_module = jmh_dependency.get('benchmark_module', None)
 
         # Global variables
         self.java_version = java_version['version']
