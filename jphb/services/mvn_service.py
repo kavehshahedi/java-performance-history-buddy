@@ -88,7 +88,8 @@ class MvnService:
             '-Dcheckstyle.skip=true',
             '-Denforcer.skip=true',
             '-Dfindbugs.skip=true',
-            '-Dlicense.skip=true'
+            '-Dlicense.skip=true',
+            '-Dmaven.build.cache.enabled=false'
         ]
 
         command.extend(COMMAND_ARGS)
