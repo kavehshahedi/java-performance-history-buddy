@@ -75,7 +75,11 @@
         },
         "name": "jetty",
         "path": "jetty",
-        "target_package": "org.eclipse.jetty"
+        "target_package": "org.eclipse.jetty",
+        "custom_benchmark": {
+            "directory": "tests/jetty-jmh",
+            "module": "tests/jetty-jmh"
+        }
     },
     {
         "git": {
