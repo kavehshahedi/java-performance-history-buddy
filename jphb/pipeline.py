@@ -128,17 +128,15 @@ class Pipeline:
             # Check if the commit has already been executed
             db_performance_data = self.db_service.get_performance_data(project_name=self.project_name,
                                                                        commit_hash=candidate_commit['commit'])
+            if db_performance_data:
+                Logger.info(f'Commit {i + 1}/{N} already processed. Skipping...', bold=True, num_indentations=1)
+                Logger.separator(num_indentations=1)
+                i += 1
+                
+                if db_performance_data['status']:
+                    sampled_count += 1
 
-            # if candidate_commit["commit"] != "16415766ddfaa183c01b5bc3d6e6c438b567c391":
-            #     i += 1
-            #     continue
-
-            # if db_performance_data:
-            #     Printer.info(f'Commit {i + 1}/{N} already processed. Skipping...', bold=True, num_indentations=1)
-            #     Printer.separator(num_indentations=1)
-            #     i += 1
-            #     sampled_count += 1
-            #     continue
+                continue
 
             # Execute the benchmark
             executor = BenchmarkExecutor(project_name=self.project_name,

@@ -8,13 +8,12 @@ import time
 import sys
 import re
 
-import psutil
-
 from jphb.services.yaml_service import YamlCreator
 
 from jphb.services.pom_service import PomService
 from jphb.services.mvn_service import MvnService
 from jphb.services.lttng_service import LTTngService
+from jphb.services.project_modification_service import ProjectModificationService
 
 from jphb.utils.file_utils import FileUtils
 from jphb.utils.Logger import Logger
@@ -35,11 +34,16 @@ class BenchmarkExecutor:
 
         self.use_lttng = kwargs.get('use_lttng', False)
 
+    def __clean_checkout(self, commit_hash: str) -> None:
+        self.repo.git.clean('-fdx')
+        self.repo.git.reset('--hard')
+        self.repo.git.checkout(commit_hash, force=True)
+
     def __replace_benchmarks(self, from_commit_hash: str, to_commit_hash: str, benchmark_directory: str) -> None:
-        self.repo.git.checkout(from_commit_hash, force=True)
+        self.__clean_checkout(from_commit_hash)
         temp_benchmark_dir = os.path.join('/tmp', benchmark_directory)
         shutil.copytree(os.path.join(self.project_path, benchmark_directory), temp_benchmark_dir)
-        self.repo.git.checkout(to_commit_hash, force=True)
+        self.__clean_checkout(to_commit_hash)
         shutil.rmtree(os.path.join(self.project_path, benchmark_directory))
         shutil.copytree(temp_benchmark_dir, os.path.join(self.project_path, benchmark_directory))
         shutil.rmtree(temp_benchmark_dir)
@@ -98,7 +102,7 @@ class BenchmarkExecutor:
             Logger.info(f'Checking out to {"current" if commit_hash == current_commit_hash else "previous"} commit...', num_indentations=self.printer_indent)
 
             # Checkout the commit
-            self.repo.git.checkout(commit_hash, force=True)
+            self.__clean_checkout(commit_hash)
 
             # If the Java version should be updated, update the pom.xml file
             if java_version['should_update_pom']:
@@ -157,7 +161,10 @@ class BenchmarkExecutor:
 
         # Check if the benchmarks are the same
         has_same_benchmarks = (current_benchmark_directory_hash == previous_benchmark_directory_hash) # type: ignore
-        Logger.info(f'Benchmarks are the same: {has_same_benchmarks}', num_indentations=self.printer_indent+1)
+        if has_same_benchmarks:
+            Logger.info(f'Benchmarks are the same', num_indentations=self.printer_indent+1)
+        else:
+            Logger.warning(f'Benchmarks are not the same', num_indentations=self.printer_indent+1)
         
         if is_previous_benchmark_built:
             if has_same_benchmarks and is_current_benchmark_built:
@@ -190,8 +197,33 @@ class BenchmarkExecutor:
                                         java_version=self.java_version)
 
             if not status:
-                Logger.error(f'Benchmarks are not compatible with the other commit', num_indentations=self.printer_indent+1)
-                return False, None
+                Logger.warning(f'Benchmarks are not compatible with the other commit', num_indentations=self.printer_indent+1)
+                
+                # Revert changes (i.e., use original benchmarks)
+                if is_current_benchmark_built:
+                    Logger.info(f'Rolling back the benchmarks...', num_indentations=self.printer_indent+1)
+
+                    self.__clean_checkout(current_commit_hash)
+                    if self.project_benchmark_module:
+                        self.__build_benchmarks_with_module(module=self.project_benchmark_module,
+                                                            benchmark_commit_hash=current_commit_hash,
+                                                            build_anyway=True,
+                                                            java_version=self.java_version,
+                                                            retry_with_other_java_versions=False)
+                    else:
+                        self.__build_project(build_anyway=True, # Since the benchmarks are not compatible, need to build the project again
+                                            java_version=self.java_version,
+                                            commit_hash=current_commit_hash,
+                                            retry_with_other_java_versions=False)
+                        self.__build_benchmarks(benchmark_directory=self.project_benchmark_directory,
+                                                benchmark_commit_hash=current_commit_hash,
+                                                build_anyway=True, # Since the benchmarks are not compatible, need to build the benchmarks again
+                                                java_version=self.java_version,
+                                                retry_with_other_java_versions=False)
+                else:
+                    # Since the benchmarks are not built, need to skip the commit
+                    Logger.error(f'Benchmarks are not built', num_indentations=self.printer_indent+1)
+                    return False, None
             
             Logger.success(f'Benchmarks are replaced with the other commit', num_indentations=self.printer_indent+1)
 
@@ -296,7 +328,7 @@ class BenchmarkExecutor:
             # Checkout the commit. If already checked out, no need to checkout again
 
             if commit_hash_ != current_commit_hash:
-                self.repo.git.checkout(commit_hash_, force=True)
+                self.__clean_checkout(commit_hash_)
 
                 # If the Java version should be updated, update the pom.xml file
                 if java_version['should_update_pom']:
@@ -340,15 +372,22 @@ class BenchmarkExecutor:
 
         return True, performance_results
 
-    def __build_project(self, commit_hash: str,
-                        java_version:str = '11',
-                        build_anyway = False) -> bool:        
+    def __build_project(self, commit_hash: str, # The commit hash of the project
+                        java_version:str = '11', # The Java version to be used for building the project
+                        build_anyway = False, # If True, the build will be done regardless of the history
+                        retry_with_other_java_versions: bool = True # If True, the build will be retried with other Java versions
+                        ) -> bool:        
         # Check if in the history, the build is successful
         history_path = os.path.join('results', self.project_name, 'build_history.json')
         build_history = FileUtils.read_json_file(history_path)
 
         if commit_hash in build_history and not build_anyway:
             return build_history[commit_hash]
+        
+        # Modify the project (if there is any special modification)
+        modification_service = ProjectModificationService(project_name=self.project_name,
+                                                          project_path=self.project_path)
+        modification_service.fix_issues()
         
         Logger.info(f'Building the project locally with Java {self.java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
@@ -374,7 +413,9 @@ class BenchmarkExecutor:
                            benchmark_commit_hash: str, # The commit SHA of the benchmark. In this pipeline, we use the previous release commit sha
                            build_anyway:bool = False, # If True, the build will be done regardless of the history
                            java_version: str = '11', # The Java version to be used for building the benchmarks
-                           custom_command: Optional[dict] = None) -> bool: # The custom command to build the benchmarks
+                           custom_command: Optional[dict] = None, # The custom command to build the benchmarks
+                           retry_with_other_java_versions: bool = True # If True, the build will be retried with other Java versions
+                           ) -> bool: 
         # Check if in the history, the build is successful
         history_path = os.path.join('results', self.project_name, 'benchmark_build_history.json')
         build_history = FileUtils.read_json_file(history_path)
@@ -382,7 +423,12 @@ class BenchmarkExecutor:
         # Check if the build has already been done
         if benchmark_commit_hash in build_history and not build_anyway:
             return build_history[benchmark_commit_hash]
-
+        
+        # Modify the project (if there is any special modification)
+        modification_service = ProjectModificationService(project_name=self.project_name,
+                                                          project_path=self.project_path)
+        modification_service.fix_issues()
+                
         # Basically, the baseline command has been indicated in MvnService class. If there is a custom command, it will be used.
         command = None
         cwd = os.path.join(self.project_path, benchmark_directory)
@@ -396,8 +442,8 @@ class BenchmarkExecutor:
         status, jv = mvn_service.package(cwd=cwd,
                                          custom_command=command,
                                          java_version=java_version,
-                                         verbose=True,
-                                         retry_with_other_java_versions=True)
+                                         verbose=False,
+                                         retry_with_other_java_versions=retry_with_other_java_versions)
 
         # Save the result
         build_history[benchmark_commit_hash] = True
@@ -409,11 +455,13 @@ class BenchmarkExecutor:
                 self.java_version = jv
 
         return status
-
-    def __build_benchmarks_with_module(self, benchmark_commit_hash: str,
-                                       module: str,
-                                       java_version:str = '11',
-                                       build_anyway = False) -> bool:        
+    
+    def __build_benchmarks_with_module(self, benchmark_commit_hash: str, # The commit hash of the benchmark
+                                       module: str, # The module to be built
+                                       java_version:str = '11', # The Java version to be used for building the benchmarks
+                                       build_anyway = False, # If True, the build will be done regardless of the history
+                                       retry_with_other_java_versions: bool = True # If True, the build will be retried with other Java versions
+                                       ) -> bool:         
         # Check if in the history, the build is successful
         history_path = os.path.join('results', self.project_name, 'benchmark_build_history.json')
         build_history = FileUtils.read_json_file(history_path)
@@ -422,14 +470,19 @@ class BenchmarkExecutor:
         if benchmark_commit_hash in build_history and not build_anyway:
             return build_history[benchmark_commit_hash]
         
+        # Modify the project (if there is any special modification)
+        modification_service = ProjectModificationService(project_name=self.project_name,
+                                                          project_path=self.project_path)
+        modification_service.fix_issues()
+        
         Logger.info(f'Building the benchmarks with custom module locally with Java {java_version}', num_indentations=self.printer_indent+2)
         mvn_service = MvnService()
         mvn_service.clean_mvn_cache(cwd=self.project_path, directory=os.path.join(self.project_path, module, 'target'))
         status, jv = mvn_service.package_module(cwd=self.project_path,
                                                 module=module,
                                                 java_version=java_version,
-                                                verbose=True,
-                                                retry_with_other_java_versions=True)
+                                                verbose=False,
+                                                retry_with_other_java_versions=retry_with_other_java_versions)
 
         # Save the result
         build_history[benchmark_commit_hash] = status
