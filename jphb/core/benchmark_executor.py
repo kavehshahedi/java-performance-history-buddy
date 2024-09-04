@@ -422,7 +422,8 @@ class BenchmarkExecutor:
         
         # Modify the project (if there is any special modification)
         modification_service = ProjectModificationService(project_name=self.project_name,
-                                                          project_path=self.project_path)
+                                                          project_path=self.project_path,
+                                                          project_benchmark_path=benchmark_directory)
         modification_service.fix_issues()
                 
         # Basically, the baseline command has been indicated in MvnService class. If there is a custom command, it will be used.
@@ -468,7 +469,8 @@ class BenchmarkExecutor:
         
         # Modify the project (if there is any special modification)
         modification_service = ProjectModificationService(project_name=self.project_name,
-                                                          project_path=self.project_path)
+                                                          project_path=self.project_path,
+                                                          project_benchmark_path=os.path.join(self.project_path, module))
         modification_service.fix_issues()
         
         Logger.info(f'Building the benchmarks with custom module locally with Java {java_version}', num_indentations=self.printer_indent+2)

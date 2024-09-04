@@ -1,5 +1,6 @@
 import os
 import json
+from typing import Optional
 
 from jphb.utils.file_utils import FileUtils
 
@@ -14,13 +15,20 @@ class ProjectModificationService:
         - Based on the documentations, the ^ symbol should be removed to make it compatible with the latest version.
     """
 
-    def __init__(self, project_name: str, project_path: str) -> None:
+    def __init__(self, project_name: str, project_path: str, project_benchmark_path: Optional[str] = None) -> None:
         self.project_name = project_name
         self.project_path = project_path
+        self.project_benchmark_path = project_benchmark_path
 
     def fix_issues(self) -> None:
-        if self.project_name == 'zipkin':
-            self.__fix_zipkin_issues()
+        match self.project_name:
+            case 'zipkin':
+                self.__fix_zipkin_issues()
+            case 'Chronicle-Core':
+                self.__fix_chronicle_core_issues()
+
+            case _:
+                pass
 
     def __fix_zipkin_issues(self) -> None:
         npm_package_json_path = os.path.join(self.project_path, 'zipkin-ui', 'package.json')
@@ -37,3 +45,39 @@ class ProjectModificationService:
 
                 with open(npm_package_json_path, 'w') as file:
                     json.dump(data, file, indent=4)
+
+    def __fix_chronicle_core_issues(self) -> None:
+        if self.project_benchmark_path is None:
+            return
+
+        pom_path = os.path.join(self.project_path, self.project_benchmark_path, 'pom.xml')
+        if not FileUtils.is_path_exists(pom_path):
+            return
+
+        import xml.etree.ElementTree as ET
+        tree = ET.parse(pom_path)
+        root = tree.getroot()
+
+        # Define the XML namespace
+        ns = {'maven': 'http://maven.apache.org/POM/4.0.0'}
+
+        # Find the maven-shade-plugin configuration
+        shade_plugin = root.find(".//maven:plugin[maven:artifactId='maven-shade-plugin']", ns)
+
+        if shade_plugin is None:
+            return
+
+        # Check and update the mainClass
+        transformer = shade_plugin.find(".//maven:transformer[@implementation='org.apache.maven.plugins.shade.resource.ManifestResourceTransformer']", ns)
+        if transformer is None:
+            return
+
+        main_class = transformer.find("maven:mainClass", ns)
+        if main_class is None or main_class.text != "org.openjdk.jmh.Main":
+            if main_class is None:
+                main_class = ET.SubElement(transformer, "mainClass")
+            main_class.text = "org.openjdk.jmh.Main"
+            
+            # Write the changes back to the file
+            ET.register_namespace('', ns['maven'])
+            tree.write(pom_path, encoding="utf-8", xml_declaration=True)
