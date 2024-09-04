@@ -23,14 +23,13 @@ class ProjectModificationService:
     def fix_issues(self) -> None:
         match self.project_name:
             case 'zipkin':
-                self.__fix_zipkin_issues()
-            case 'Chronicle-Core':
-                self.__fix_chronicle_core_issues()
-
+                self.__fix_bootstrap_saas_version()
+            case 'Chronicle-Core' | 'jersey':
+                self.__fix_jmh_main_class()
             case _:
                 pass
 
-    def __fix_zipkin_issues(self) -> None:
+    def __fix_bootstrap_saas_version(self) -> None:
         npm_package_json_path = os.path.join(self.project_path, 'zipkin-ui', 'package.json')
         if not FileUtils.is_path_exists(npm_package_json_path):
             return
@@ -46,7 +45,7 @@ class ProjectModificationService:
                 with open(npm_package_json_path, 'w') as file:
                     json.dump(data, file, indent=4)
 
-    def __fix_chronicle_core_issues(self) -> None:
+    def __fix_jmh_main_class(self) -> None:
         if self.project_benchmark_path is None:
             return
 

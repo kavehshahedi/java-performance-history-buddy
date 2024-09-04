@@ -246,6 +246,20 @@
         }
     },
     {
+        "git": {
+            "owner": "eclipse-ee4j",
+            "repo": "jersey",
+            "branch": "2.x"
+        },
+        "name": "jersey",
+        "path": "jersey",
+        "target_package": "org.glassfish.jersey",
+        "custom_benchmark": {
+            "directory": "tests/performance/benchmarks",
+            "module": "tests/performance/benchmarks"
+        }
+    },
+    {
         "name": "hadoop",
         "branch": "trunk",
         "path": "hadoop"
