@@ -1,6 +1,7 @@
 import subprocess
 import os
 from typing import Optional
+from packaging import version
 
 from jphb.utils.file_utils import FileUtils
 
@@ -143,25 +144,29 @@ class MvnService:
     @staticmethod
     def update_java_home(java_version: str) -> dict:
         env = os.environ.copy()
-
-        # Check if java version is a float
-        try:
-            float(java_version)
-        except:
-            return env
         
-        # Convert version strings to floats for comparison
-        requested_version = float(java_version.replace('1.', ''))
-        available_versions = [float(v.replace('1.', '')) for v in JAVA_HOME_PATHS.keys()]
+        def parse_version(v):
+            # Remove 'java' prefix if present
+            v = v.lower().replace('java', '').strip()
+            # Parse version using the packaging library
+            return version.parse(v)
+        
+        requested_version = parse_version(java_version)
+        available_versions = sorted(
+            ((parse_version(k), k) for k in JAVA_HOME_PATHS.keys()),
+            key=lambda x: x[0]
+        )
         
         # Find the closest available version that is >= requested version
-        selected_version = min((v for v in available_versions if v >= requested_version), default=None)
+        selected_version = next(
+            (av for av, key in available_versions if av >= requested_version),
+            None
+        )
         
         if selected_version:
-            # Convert back to string format
-            selected_version_str = f'1.{selected_version}' if selected_version < 9 else str(int(selected_version))
-            java_home = JAVA_HOME_PATHS[selected_version_str]
+            selected_key = next(key for av, key in available_versions if av == selected_version)
+            java_home = JAVA_HOME_PATHS[selected_key]
             env['JAVA_HOME'] = java_home
             env['PATH'] = f"{java_home}/bin:" + env['PATH']
-                
+        
         return env
