@@ -10,6 +10,7 @@ COPY main.py /app
 COPY requirements.txt /app
 COPY .env /app
 COPY projects.json /app
+COPY run_projects.sh /app
 
 # Install required packages, including Git, wget, and dependencies for srcml
 RUN apt-get update && apt-get install -y \
@@ -72,5 +73,5 @@ COPY conf/java/toolchains.xml /home/kavehshahedi/.m2/toolchains.xml
 COPY conf/maven/settings.xml /usr/local/apache-maven-3.9.8/conf/settings.xml
 
 # Run main.py when the container launches
-# ENTRYPOINT ["python", "main.py"]
-ENTRYPOINT [ "./run_projects.sh" ]
+ENTRYPOINT ["python", "main.py"]
+# ENTRYPOINT [ "./run_projects.sh" ]

@@ -2,9 +2,9 @@
 
 # Array of project names
 projects=(
-    "HdrHistogram"
-    "JCTools"
-    "debezium"
+    # "HdrHistogram"
+    # "JCTools"
+    # "debezium"
     "SimpleFlatMapper"
     "objenesis"
     "apm-agent-java"
@@ -14,20 +14,20 @@ projects=(
     "zipkin"
     "client_java"
     "Chronicle-Core"
-    # "logbook"
+    # # "logbook"
     "fastjson2"
     "log4j2"
-    # "cantaloupe"
+    # # "cantaloupe"
     "jdbi"
-    # "jooby"
-    "feign"
-    # "panda"
+    # # "jooby"
+    # "feign"
+    # # "panda"
     "protostuff"
-    # "hadoop"
-    # "camel"
-    # "kafka"
-    # "cassandra"
-    # "spark"
+    # # "hadoop"
+    # # "camel"
+    # # "kafka"
+    # # "cassandra"
+    # # "spark"
 )
 
 # Loop through each project and run the command

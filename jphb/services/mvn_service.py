@@ -2,20 +2,20 @@ import subprocess
 import os
 from typing import Optional
 
-# JAVA_HOME_PATHS = {
-#     '1.8': '/usr/lib/jvm/java-8-openjdk-amd64',
-#     '11': '/usr/lib/jvm/java-11-openjdk-amd64',
-#     '17': '/usr/lib/jvm/java-17-openjdk-amd64',
-#     '21': '/usr/lib/jvm/java-21-openjdk-amd64'
-# }
+JAVA_HOME_PATHS = {
+    '1.8': '/usr/lib/jvm/java-8-openjdk-amd64',
+    '11': '/usr/lib/jvm/java-11-openjdk-amd64',
+    '17': '/usr/lib/jvm/java-17-openjdk-amd64',
+    '21': '/usr/lib/jvm/java-21-openjdk-amd64'
+}
 from jphb.utils.file_utils import FileUtils
 
-JAVA_HOME_PATHS = {
-    "1.8": "/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home",
-    "11": "/opt/homebrew/Cellar/openjdk@11/11.0.24/libexec/openjdk.jdk/Contents/Home",
-    "17": "/opt/homebrew/Cellar/openjdk@17/17.0.12/libexec/openjdk.jdk/Contents/Home",
-    "21": "/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home",
-}
+# JAVA_HOME_PATHS = {
+#     "1.8": "/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home",
+#     "11": "/opt/homebrew/Cellar/openjdk@11/11.0.24/libexec/openjdk.jdk/Contents/Home",
+#     "17": "/opt/homebrew/Cellar/openjdk@17/17.0.12/libexec/openjdk.jdk/Contents/Home",
+#     "21": "/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home",
+# }
 
 MAX_NUM_RETRIES = 2
 
@@ -58,7 +58,7 @@ class MvnService:
             command = custom_command
 
         return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout, True)
-    
+
     def package_module(self, cwd: str,
                 module: str,
                 java_version: str = '11',
@@ -85,7 +85,7 @@ class MvnService:
                           retry_with_other_java_versions: bool,
                           timeout: int,
                           parent_mvn_wrapper: bool) -> tuple[bool, str]:
-        
+
         COMMAND_ARGS = [
             '-DskipTests',
             '-Dmaven.javadoc.skip=true',
@@ -100,6 +100,7 @@ class MvnService:
         retries = 0
         while True:
             env = MvnService.update_java_home(java_version)
+            print("Building using: ", java_version, env["JAVA_HOME"])
 
             # Try with regular maven command
             process = subprocess.run(command, cwd=cwd, capture_output=not verbose, shell=is_shell, timeout=timeout, env=env)
@@ -113,7 +114,7 @@ class MvnService:
                 # If regular maven fails, try with mvnw
                 mvnw_command = ['../mvnw'] if parent_mvn_wrapper else ['./mvnw']
                 mvnw_command += command[1:]  # Add the rest of the command arguments
-                
+
                 try:
                     process = subprocess.run(mvnw_command, cwd=cwd, capture_output=not verbose, shell=is_shell, timeout=timeout, env=env)
                     if process.returncode == 0:
@@ -144,7 +145,7 @@ class MvnService:
     @staticmethod
     def remove_security_from_jar(jar_path: str) -> None:
         subprocess.run(['zip', '-d', jar_path, 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'], capture_output=True)
-    
+
     @staticmethod
     def update_java_home(java_version: str) -> dict:
         env = os.environ.copy()

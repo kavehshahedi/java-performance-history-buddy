@@ -69,7 +69,7 @@ class Pipeline:
                                     use_llm=self.use_llm,
                                     printer_indent=1)
             num_mined_commits = pcm.mine(
-                force=True
+                force=False
             )
             # exit()
 
