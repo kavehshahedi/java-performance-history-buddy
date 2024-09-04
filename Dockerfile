@@ -68,7 +68,8 @@ ENV PATH="$JAVA_HOME/bin:/usr/local/bin:${PATH}"
 COPY conf/java/toolchains.xml /root/.m2/toolchains.xml
 COPY conf/java/toolchains.xml /home/kavehshahedi/.m2/toolchains.xml
 
-# Copy the maven settings.xml file to the container
+# Copy the maven settings.xml file to the container (both for global usage and the user)
+COPY conf/maven/settings.xml /root/.m2/settings.xml
 COPY conf/maven/settings.xml /usr/local/apache-maven-3.9.8/conf/settings.xml
 
 # Run main.py when the container launches
