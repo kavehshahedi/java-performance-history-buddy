@@ -135,6 +135,10 @@ class ProjectChangeMiner:
                                                                                                     checkout=False)
             if there_is_dependency:
                 changed_files = [file for file in changed_files if not str(file).startswith(benchmark_directory)]
+            else:
+                # Since there is no dependency to JMH, we skip the commit
+                Logger.warning(f'({commit_index}/{total_commits}) Commit {commit.hexsha} does not contain a dependency to JMH', num_indentations=self.printer_indent)
+                continue
 
             # Remove the test java files
             changed_files = [file for file in changed_files if not any(substring in str(file).lower() for substring in ('/test',))]
