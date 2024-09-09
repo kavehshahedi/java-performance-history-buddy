@@ -75,7 +75,11 @@
         },
         "name": "jetty",
         "path": "jetty",
-        "target_package": "org.eclipse.jetty"
+        "target_package": "org.eclipse.jetty",
+        "custom_benchmark": {
+            "directory": "tests/jetty-jmh",
+            "module": "tests/jetty-jmh"
+        }
     },
     {
         "git": {
@@ -243,6 +247,20 @@
         "custom_benchmark": {
             "directory": "protostuff-benchmarks",
             "module": "protostuff-benchmarks"
+        }
+    },
+    {
+        "git": {
+            "owner": "eclipse-ee4j",
+            "repo": "jersey",
+            "branch": "2.x"
+        },
+        "name": "jersey",
+        "path": "jersey",
+        "target_package": "org.glassfish.jersey",
+        "custom_benchmark": {
+            "directory": "tests/performance/benchmarks",
+            "module": "tests/performance/benchmarks"
         }
     },
     {

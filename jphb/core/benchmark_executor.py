@@ -53,8 +53,7 @@ class BenchmarkExecutor:
                 previous_commit_hash: str,
                 changed_methods: dict[str, list[str]],
                 target_package: str,
-                java_version: dict,
-                custom_benchmark: Optional[dict] = None) -> Tuple[bool, Optional[dict]]:
+                java_version: dict) -> Tuple[bool, Optional[dict]]:
         """
         Execute the benchmarks for the given project
         Steps:
@@ -76,12 +75,9 @@ class BenchmarkExecutor:
         """
 
         # Variables
-        self.project_benchmark_directory = jmh_dependency['benchmark_directory']
-        self.project_benchmark_name = jmh_dependency['benchmark_name']
-        self.project_benchmark_module = None
-        if custom_benchmark:
-            self.project_benchmark_directory = custom_benchmark.get('directory', self.project_benchmark_directory)
-            self.project_benchmark_module = custom_benchmark.get('module', None)
+        self.project_benchmark_directory = jmh_dependency.get('benchmark_directory', '')
+        self.project_benchmark_name = jmh_dependency.get('benchmark_name', '')
+        self.project_benchmark_module = jmh_dependency.get('benchmark_module', None)
 
         # Global variables
         self.java_version = java_version['version']
@@ -426,7 +422,8 @@ class BenchmarkExecutor:
         
         # Modify the project (if there is any special modification)
         modification_service = ProjectModificationService(project_name=self.project_name,
-                                                          project_path=self.project_path)
+                                                          project_path=self.project_path,
+                                                          project_benchmark_path=benchmark_directory)
         modification_service.fix_issues()
                 
         # Basically, the baseline command has been indicated in MvnService class. If there is a custom command, it will be used.
@@ -472,7 +469,8 @@ class BenchmarkExecutor:
         
         # Modify the project (if there is any special modification)
         modification_service = ProjectModificationService(project_name=self.project_name,
-                                                          project_path=self.project_path)
+                                                          project_path=self.project_path,
+                                                          project_benchmark_path=os.path.join(self.project_path, module))
         modification_service.fix_issues()
         
         Logger.info(f'Building the benchmarks with custom module locally with Java {java_version}', num_indentations=self.printer_indent+2)

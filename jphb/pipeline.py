@@ -90,6 +90,7 @@ class Pipeline:
             cc = CommitCandidator(project_name=self.project_name,
                                 project_path=self.project_path,
                                 project_git_info=self.git_info,
+                                custom_benchmark=self.custom_benchmark,
                                 printer_indent=1)
             candidate_commits = cc.select()
 
@@ -138,6 +139,11 @@ class Pipeline:
 
                 continue
 
+            # This is for backward compatibility
+            if self.custom_benchmark and 'module' in self.custom_benchmark:
+                if 'benchmark_module' not in candidate_commit['jmh_dependency'] or candidate_commit['jmh_dependency']['benchmark_module'] is None:
+                    candidate_commit['jmh_dependency']['benchmark_module'] = self.custom_benchmark['module']
+
             # Execute the benchmark
             executor = BenchmarkExecutor(project_name=self.project_name,
                                          project_path=self.project_path,
@@ -148,7 +154,6 @@ class Pipeline:
                                                         previous_commit_hash=candidate_commit['previous_commit'],
                                                         changed_methods={commit_hash: [m for method_ in files.values() for m in method_] for commit_hash, files in candidate_commit['method_changes'].items()},
                                                         target_package=self.target_package,
-                                                        custom_benchmark=self.custom_benchmark,
                                                         java_version=candidate_commit['java_version'])
 
             # If the benchmark was executed successfully, save the performance data
