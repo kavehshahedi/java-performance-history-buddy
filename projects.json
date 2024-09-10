@@ -123,7 +123,11 @@
         },
         "name": "client_java",
         "path": "prometheus",
-        "target_package": "io.prometheus"
+        "target_package": "io.prometheus",
+        "custom_benchmark": {
+            "directory": "benchmarks",
+            "module": "benchmarks"
+        }
     },
     {
         "git": {
