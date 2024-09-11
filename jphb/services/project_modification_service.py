@@ -26,6 +26,8 @@ class ProjectModificationService:
                 self.__fix_bootstrap_saas_version()
             case 'Chronicle-Core' | 'jersey':
                 self.__fix_jmh_main_class()
+            case 'protostuff':
+                self.__fix_protostuff()
             case _:
                 pass
 
@@ -80,3 +82,49 @@ class ProjectModificationService:
             # Write the changes back to the file
             ET.register_namespace('', ns['maven'])
             tree.write(pom_path, encoding="utf-8", xml_declaration=True)
+
+    def __fix_protostuff(self) -> None:
+        pom_path = os.path.join(self.project_path, 'pom.xml')
+        if not FileUtils.is_path_exists(pom_path):
+            return
+        
+        with open(pom_path, 'r') as file:
+            content = file.read()
+
+        # Find commented benchmark module
+        import re
+         # Step 1: Find the <modules>...</modules> section
+        modules_section_pattern = r'<modules>(.*?)</modules>'
+        modules_match = re.search(modules_section_pattern, content, re.IGNORECASE | re.DOTALL)
+        
+        if not modules_match:
+            # No <modules> section found
+            return
+        
+        # Extract the <modules> section content
+        modules_content = modules_match.group(1)
+
+        # Step 2: Find commented benchmark module within the <modules> section
+        comment_pattern = r'<!--(.*?<module>([^<]*?benchmark.*?)<\/module>.*?)-->'
+        
+        updated_modules_content = modules_content 
+        matches = re.finditer(comment_pattern, modules_content, re.IGNORECASE | re.DOTALL)
+        
+        for match in matches:
+            # Extract the entire comment block and the module name
+            full_comment = match.group(0)  # The entire comment block
+            module_name = match.group(2).strip()  # The benchmark module name
+
+            # Create the uncommented version of the module
+            uncommented_module = f'<module>{module_name}</module>'
+
+            # Replace the commented module with the uncommented one in the modules content
+            updated_modules_content = updated_modules_content.replace(full_comment, uncommented_module)
+
+        # Step 3: Replace the old <modules> content with the updated content
+        updated_content = content.replace(modules_content, updated_modules_content)
+
+        # Step 4: If the content has changed, write the changes back to the file
+        if updated_content != content:
+            with open(pom_path, 'w') as file:
+                file.write(updated_content)
