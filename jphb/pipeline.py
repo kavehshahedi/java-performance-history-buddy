@@ -41,6 +41,8 @@ class Pipeline:
         self.db_service = DBService(use_cloud_db=use_cloud_db)
 
     def run(self) -> None:
+        # Get the performance commits of the project
+        performance_commits = FileUtils.find_and_read_performance_commits(f"{self.project_name}.json", "performance_commits")
         # First we check if the candidate commits have already been selected
         candidate_commits_file_path = os.path.join('results', self.project_name, 'candidate_commits.json')
         if not FileUtils.is_path_exists(candidate_commits_file_path):
@@ -52,9 +54,9 @@ class Pipeline:
                 if not cloned:
                     Logger.error(f'Failed to clone {self.project_name}. Skipping...', bold=True, num_indentations=1)
                     return
-                
+
                 Logger.success(f'{self.project_name} cloned successfully.', bold=True, num_indentations=1)
-                
+
                 # Update the project information in the database
                 self.db_service.update_project(project_name=self.project_name,
                                                 head_commit=head_commit_hash,
@@ -69,7 +71,8 @@ class Pipeline:
                                     use_llm=self.use_llm,
                                     printer_indent=1)
             num_mined_commits = pcm.mine(
-                force=False
+                force=True,
+                custom_commits=performance_commits,
             )
             # exit()
 
@@ -133,7 +136,7 @@ class Pipeline:
                 Logger.info(f'Commit {i + 1}/{N} already processed. Skipping...', bold=True, num_indentations=1)
                 Logger.separator(num_indentations=1)
                 i += 1
-                
+
                 if db_performance_data['status']:
                     sampled_count += 1
 
@@ -179,7 +182,7 @@ class Pipeline:
             Logger.info(f'Commit {i + 1}/{N} processed. {sampled_count} out of {sample_size} required samples are available.', bold=True, num_indentations=1)
             Logger.info(f'Execution time: {time.time() - start_time}', bold=True, num_indentations=1)
             Logger.separator(num_indentations=1)
-            
+
             i += 1
 
         if sampled_count < sample_size:

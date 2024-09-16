@@ -92,7 +92,18 @@ class RefactoringMinerService:
         return method_changes
 
     def get_candidate_refactorings(self, refactorings: list[dict]) -> list[dict]:
-        acceptable_refactoring_types = ["Extract Method", "Extract Class", "Inline Method", "Move Method"]
+        acceptable_refactoring_types = [
+            "Add Parameter",
+            "Change Variable Type",
+            "Add Variable Modifier",
+            "Add Method Annotation",
+            "Change Attribute Access Modifier",
+            "Extract Method",
+            "Change Method Access Modifier",
+            "Change Parameter Type",
+            "Extract Variable",
+            "Pull Up Method"
+        ]
         candidate_refactorings = []
         for refactoring in refactorings:
             refactoring_type = refactoring.get("type")

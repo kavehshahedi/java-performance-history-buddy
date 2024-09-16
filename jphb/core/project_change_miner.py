@@ -154,7 +154,7 @@ class ProjectChangeMiner:
             # print(candidate_refactorings)
 
             restructured_refactorings, refactoring_metadata = refactoring_miner.restructure_refactorings(repo, candidate_refactorings, commit.hexsha, previous_commit.hexsha)
-            print(restructured_refactorings)
+            # print(restructured_refactorings)
             # continue
 
             # for commit_, cr in restructured_refactorings.items():
