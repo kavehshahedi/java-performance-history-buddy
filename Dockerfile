@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install -y \
     unzip \
     cpio \
     man \
+    automake \
+    libtool \
     lttng-tools\
     lttng-modules-dkms && \
     wget -q https://dlcdn.apache.org/maven/maven-3/3.9.8/binaries/apache-maven-3.9.8-bin.zip && \

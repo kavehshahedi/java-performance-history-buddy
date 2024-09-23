@@ -89,7 +89,12 @@
         },
         "name": "netty",
         "path": "netty",
-        "target_package": "io.netty"
+        "target_package": "io.netty",
+        "custom_benchmark": {
+            "directory": "microbench",
+            "module": "microbench",
+            "args": "-Pbenchmark-jar"
+        }
     },
     {
         "git": {
