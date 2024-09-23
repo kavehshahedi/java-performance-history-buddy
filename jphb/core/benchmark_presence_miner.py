@@ -78,12 +78,16 @@ class BenchmarkPresenceMiner:
 
         return there_is_dependency, benchmark_directory, benchmark_name
 
-    def mine(self, custom_commits: Optional[list[str]] = None) -> int:
+    def mine(self, custom_commits: Optional[list[str]] = None, max_commits: Optional[int] = None) -> int:
         repo = Repo(self.project_path)
 
         counter = 0
         total_commits = sum(1 for _ in repo.iter_commits(self.project_branch))
         for commit_index, commit in enumerate(repo.iter_commits(self.project_branch), start=1):
+            # Check if we reached the maximum number of commits
+            if max_commits and commit_index > max_commits:
+                break
+            
             # Check if there are custom commits to process
             if custom_commits and commit.hexsha not in custom_commits:
                 continue

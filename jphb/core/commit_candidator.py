@@ -116,6 +116,7 @@ class CommitCandidator:
                     'benchmark_directory': jmh_dependency.get('benchmark_directory', ''),
                     'benchmark_name': jmh_dependency.get('benchmark_name', ''),
                     'benchmark_module': self.custom_benchmark['module'] if (self.custom_benchmark and 'module' in self.custom_benchmark) else None,
+                    'args': self.custom_benchmark['args'] if (self.custom_benchmark and 'args' in self.custom_benchmark) else None
                 },
                 'method_changes': method_changes,
                 'java_version': {

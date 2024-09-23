@@ -78,6 +78,11 @@ class BenchmarkExecutor:
         self.project_benchmark_directory = jmh_dependency.get('benchmark_directory', '')
         self.project_benchmark_name = jmh_dependency.get('benchmark_name', '')
         self.project_benchmark_module = jmh_dependency.get('benchmark_module', None)
+        self.project_benchmark_args = jmh_dependency.get('args', None)
+
+        if self.project_benchmark_args:
+            if isinstance(self.project_benchmark_args, str):
+                self.project_benchmark_args = self.project_benchmark_args.split()
 
         # Global variables
         self.java_version = java_version['version']
@@ -434,6 +439,7 @@ class BenchmarkExecutor:
         mvn_service = MvnService()
         status, jv = mvn_service.package(cwd=cwd,
                                          custom_command=command,
+                                         args=self.project_benchmark_args,
                                          java_version=java_version,
                                          verbose=False,
                                          retry_with_other_java_versions=retry_with_other_java_versions)
@@ -473,6 +479,7 @@ class BenchmarkExecutor:
         mvn_service = MvnService()
         mvn_service.clean_mvn_cache(cwd=self.project_path, directory=os.path.join(self.project_path, module, 'target'))
         status, jv = mvn_service.package_module(cwd=self.project_path,
+                                                args=self.project_benchmark_args,
                                                 module=module,
                                                 java_version=java_version,
                                                 verbose=False,

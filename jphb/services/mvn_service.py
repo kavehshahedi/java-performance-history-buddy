@@ -20,6 +20,7 @@ class MvnService:
 
     def install(self, cwd: str,
                 custom_command: Optional[list] = None,
+                args: Optional[list] = None,
                 java_version: str = '11',
                 verbose: bool = False,
                 is_shell: bool = False,
@@ -34,10 +35,14 @@ class MvnService:
         if custom_command is not None:
             command = custom_command
 
+        if args is not None:
+            command.extend(args)
+
         return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout, False)
 
     def package(self, cwd: str,
                 custom_command: Optional[list] = None,
+                args: Optional[list] = None,
                 java_version: str = '11',
                 verbose: bool = False,
                 is_shell: bool = False,
@@ -52,10 +57,14 @@ class MvnService:
         if custom_command is not None:
             command = custom_command
 
+        if args is not None:
+            command.extend(args)
+
         return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout, True)
     
     def package_module(self, cwd: str,
                 module: str,
+                args: Optional[list] = None,
                 java_version: str = '11',
                 verbose: bool = False,
                 is_shell: bool = False,
@@ -69,6 +78,9 @@ class MvnService:
             'clean',
             'package'
         ]
+
+        if args is not None:
+            command.extend(args)
 
         return self.__run_mvn_command(cwd, command, java_version, verbose, is_shell, retry_with_other_java_versions, timeout, False)
 
