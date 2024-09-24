@@ -104,7 +104,11 @@
         },
         "name": "rdf4j",
         "path": "rdf4j",
-        "target_package": "org.eclipse.rdf4j"
+        "target_package": "org.eclipse.rdf4j",
+        "custom_benchmark": {
+            "directory": "testsuites/benchmark",
+            "module": "testsuites/benchmark"
+        }
     },
     {
         "git":{
