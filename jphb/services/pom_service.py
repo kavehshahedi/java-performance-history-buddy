@@ -12,8 +12,12 @@ class PomService:
             self.tree = ET.ElementTree(ET.fromstring(pom_source))
         except ET.ParseError:
             # If parsing fails, assume it's a file path
-            self.pom_path = pom_source
-            self.tree = ET.parse(pom_source)
+            try:
+                self.pom_path = pom_source
+                self.tree = ET.parse(pom_source)
+            except:
+                # Create an empty tree
+                self.tree = ET.ElementTree(ET.Element('project'))
         
         self.root = self.tree.getroot()
 

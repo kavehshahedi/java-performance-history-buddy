@@ -64,11 +64,15 @@ class CommitCandidator:
             pom_path = os.path.join(self.project_path, 'pom.xml')
             if not FileUtils.is_path_exists(pom_path):
                 continue
-            pom_service = PomService(pom_source=pom_path)
-            java_version = pom_service.get_java_version()
-            if java_version is None:
-                # Currently, if the java version is not found in the pom.xml file, we will assume it is Java 8
-                # NOTE: We may also skip the commit if the Java version is not found, but for now, we will assume it is Java 8
+            
+            try:
+                pom_service = PomService(pom_source=pom_path)
+                java_version = pom_service.get_java_version()
+                if java_version is None:
+                    # Currently, if the java version is not found in the pom.xml file, we will assume it is Java 8
+                    # NOTE: We may also skip the commit if the Java version is not found, but for now, we will assume it is Java 8
+                    java_version = '1.8'
+            except:
                 java_version = '1.8'
 
             # Check if Java version is a number (float or int)
