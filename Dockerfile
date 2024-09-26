@@ -23,6 +23,11 @@ RUN apt-get update && apt-get install -y \
     man \
     automake \
     libtool \
+    autoconf \
+    libaio-dev \
+    # libssl-dev \
+    libapr1-dev \
+    lksctp-tools \
     lttng-tools\
     lttng-modules-dkms && \
     wget -q https://dlcdn.apache.org/maven/maven-3/3.9.8/binaries/apache-maven-3.9.8-bin.zip && \
