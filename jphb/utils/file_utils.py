@@ -76,19 +76,27 @@ class FileUtils:
 
     @staticmethod
     def find_and_read_performance_commits(filename, directory):
-        for root, dirs, files in os.walk(directory):
+        # Convert relative path to absolute path
+        abs_directory = os.path.abspath(directory)
+        print(f"Searching in directory: {abs_directory}")
+        
+        for root, dirs, files in os.walk(abs_directory):
+            print(f"Checking in: {root}")
+            print(f"Files in this directory: {files}")
+            
             if filename in files:
                 file_path = os.path.join(root, filename)
+                print(f"Found file at: {file_path}")
                 try:
-                    with open(file_path, "r") as file:
+                    with open(file_path, 'r') as file:
                         data = json.load(file)
-                        return data.get("commits", [])
+                        return data.get('commits', [])
                 except json.JSONDecodeError:
                     print(f"Error: {filename} is not a valid JSON file.")
                     return []
                 except IOError:
                     print(f"Error: Unable to read {filename}.")
                     return []
-
+        
         print(f"Error: {filename} not found in the specified directory.")
         return []
