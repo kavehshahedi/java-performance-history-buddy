@@ -168,7 +168,8 @@
         "path": "fastjson2",
         "target_package": "com.alibaba.fastjson2",
         "custom_benchmark": {
-            "directory": "benchmark"
+            "directory": "benchmark",
+            "module": "benchmark"
         }
     },
     {
