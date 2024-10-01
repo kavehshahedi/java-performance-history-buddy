@@ -111,10 +111,12 @@ class MvnService:
             env = MvnService.update_java_home(java_version)
 
             # Try with regular maven command
-            process = subprocess.run(command, cwd=cwd, capture_output=not verbose, shell=is_shell, timeout=timeout, env=env)
-
-            if process.returncode == 0:
-                return True, java_version
+            try:
+                process = subprocess.run(command, cwd=cwd, capture_output=not verbose, shell=is_shell, timeout=timeout, env=env)
+                if process.returncode == 0:
+                    return True, java_version
+            except:
+                pass
 
             # If regular maven fails, try with mvnw
             mvnw_path = os.path.join(cwd, '../mvnw') if parent_mvn_wrapper else os.path.join(cwd, 'mvnw')
