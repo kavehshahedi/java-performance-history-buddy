@@ -317,6 +317,7 @@ class BenchmarkExecutor:
                     instrument_main_method=False,
                     add_timestamp_to_file_names=True,
                     use_hash=True,
+                    max_number_of_instrumentations=100000,
                     yaml_file=os.path.join(config_directory, f'{bench_name}.yaml')
                 )
 

@@ -30,11 +30,13 @@ class Configuration:
         def __init__(self, target_package: Optional[str] = None,
                      target_methods: Optional['Configuration.TargetMethods'] = None,
                      only_visisted: bool = False,
-                     instrument_main_method: bool = False):
+                     instrument_main_method: bool = False,
+                     max_number_of_instrumentations: int = -1):
             self.target_package = target_package
             self.target_methods = target_methods
             self.only_visisted = only_visisted
             self.instrument_main_method = instrument_main_method
+            self.max_number_of_instrumentations = max_number_of_instrumentations
 
 
 class YamlCreator:
@@ -61,7 +63,8 @@ class YamlCreator:
             'targetPackage': data.target_package,
             'targetMethods': data.target_methods,
             'onlyCheckVisited': data.only_visisted,
-            'instrumentMainMethod': data.instrument_main_method
+            'instrumentMainMethod': data.instrument_main_method,
+            'maxNumberOfInstrumentations': data.max_number_of_instrumentations
         })
 
     def target_methods_representer(self, dumper, data):
@@ -79,6 +82,7 @@ class YamlCreator:
                     add_timestamp_to_file_names: bool = False,
                     only_visited: bool = False,
                     instrument_main_method: bool = False,
+                    max_number_of_instrumentations: int = -1,
                     use_hash: bool = False):
         yaml = YAML()
 
@@ -106,7 +110,8 @@ class YamlCreator:
                     ignore=ignore
                 ),
                 only_visisted=only_visited,
-                instrument_main_method=instrument_main_method
+                instrument_main_method=instrument_main_method,
+                max_number_of_instrumentations=max_number_of_instrumentations
             )
         )
 
