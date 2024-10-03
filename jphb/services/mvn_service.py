@@ -96,6 +96,7 @@ class MvnService:
         COMMAND_ARGS = [
             '-q',
             '-DskipTests',
+            '-Dmaven.test.skip=true',
             '-Dmaven.javadoc.skip=true',
             '-Dcheckstyle.skip=true',
             '-Denforcer.skip=true',
