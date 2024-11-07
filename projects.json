@@ -20,20 +20,6 @@
         "target_package": "org.jctools"
     },
     {
-        "git": {
-            "owner": "debezium",
-            "repo": "debezium",
-            "branch": "main"
-        },
-        "name": "debezium",
-        "path": "debezium",
-        "target_package": "io.debezium",
-        "custom_benchmark": {
-            "directory": "debezium-microbenchmark",
-            "module": "debezium-microbenchmark"
-        }
-    },
-    {
         "git":{
             "owner": "arnaudroger",
             "repo": "SimpleFlatMapper",
@@ -97,20 +83,6 @@
         }
     },
     {
-        "git": {
-            "owner": "eclipse-rdf4j",
-            "repo": "rdf4j",
-            "branch": "main"
-        },
-        "name": "rdf4j",
-        "path": "rdf4j",
-        "target_package": "org.eclipse.rdf4j",
-        "custom_benchmark": {
-            "directory": "testsuites/benchmark",
-            "module": "testsuites/benchmark"
-        }
-    },
-    {
         "git":{
             "owner": "openzipkin",
             "repo": "zipkin",
@@ -150,16 +122,6 @@
     },
     {
         "git": {
-            "owner": "zalando",
-            "repo": "logbook",
-            "branch": "main"
-        },
-        "name": "logbook",
-        "path": "logbook",
-        "target_package": "org.zalando.logbook"
-    },
-    {
-        "git": {
             "owner": "alibaba",
             "repo": "fastjson2",
             "branch": "main"
@@ -170,35 +132,6 @@
         "custom_benchmark": {
             "directory": "benchmark",
             "module": "benchmark"
-        }
-    },
-    {
-        "git": {
-            "owner": "apache",
-            "repo": "logging-log4j2",
-            "branch": "2.x"
-        },
-        "name": "log4j2",
-        "path": "log4j2",
-        "target_package": "org.apache.logging.log4j",
-        "custom_benchmark": {
-            "directory": "log4j-perf-test",
-            "module": "log4j-perf-test"
-        }
-    },
-    {
-        "git": {
-            "owner": "cantaloupe-project",
-            "repo": "cantaloupe",
-            "branch": "develop"
-        },
-        "name": "cantaloupe",
-        "path": "cantaloupe",
-        "target_package": "edu.illinois.library.cantaloupe",
-        "custom_benchmark": {
-            "directory": "",
-            "module": "cantaloupe-benchmark",
-            "profile": "-Pbenchmark"
         }
     },
     {
@@ -217,16 +150,6 @@
     },
     {
         "git": {
-            "owner": "jooby-project",
-            "repo": "jooby",
-            "branch": "3.x"
-        },
-        "name": "jooby",
-        "path": "jooby",
-        "target_package": "io.jooby"
-    },
-    {
-        "git": {
             "owner": "OpenFeign",
             "repo": "feign",
             "branch": "master"
@@ -238,16 +161,6 @@
             "directory": "benchmark",
             "module": "benchmark"
         }
-    },
-    {
-        "git": {
-            "owner": "panda-lang",
-            "repo": "panda",
-            "branch": "master"
-        },
-        "name": "panda",
-        "path": "panda",
-        "target_package": "panda"
     },
     {
         "git": {
@@ -276,30 +189,5 @@
             "directory": "tests/performance/benchmarks",
             "module": "tests/performance/benchmarks"
         }
-    },
-    {
-        "name": "hadoop",
-        "branch": "trunk",
-        "path": "hadoop"
-    },
-    {
-        "name": "camel",
-        "branch": "main",
-        "path": "camel"
-    },
-    {
-        "name": "kafka",
-        "branch": "trunk",
-        "path": "kafka"
-    },
-    {
-        "name": "cassandra",
-        "branch": "trunk",
-        "path": "cassandra"
-    },
-    {
-        "name": "spark",
-        "branch": "master",
-        "path": "spark"
     }
 ]
