@@ -19,7 +19,7 @@ class ProjectChangeMiner:
     def __init__(self, project_name: str,
                  project_path: str,
                  project_branch: str,
-                 custom_benchmark: dict,
+                 custom_benchmark: Optional[dict] = None,
                  use_llm: bool = False,
                  **kwargs) -> None:
         self.project_name = project_name

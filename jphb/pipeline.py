@@ -17,21 +17,30 @@ from jphb.utils.file_utils import FileUtils
 
 class Pipeline:
 
-    def __init__(self, project: dict,
+    def __init__(self, project_name: str,
+                 project_git: str,
+                 project_package: str,
                  base_project_path: str,
+                 project_benchmark_module: str = '',
                  use_lttng: bool = False,
                  use_llm: bool = False,
                  use_email_notification: bool = False,
                  use_cloud_db: bool = False) -> None:
-        self.project_name = project['name']
+        self.project_name = project_name
         self.project_path = os.path.join(base_project_path, self.project_name)
-        self.target_package = project['target_package']
+        self.target_package = project_package
+        self.custom_benchmark = {
+            'name': project_benchmark_module,
+            'module': project_benchmark_module
+        } if project_benchmark_module != '' else None
+        
+        project_git = project_git.replace('https', '').replace('http', '').replace('://', '')
+        project_git = project_git.replace('www.', '').replace('github.com/', '').replace('.git', '')
         self.git_info = {
-            'owner': project['git']['owner'],
-            'repo': project['git']['repo'],
-            'branch': project['git']['branch']
+            'owner': project_git.split('/')[0],
+            'repo': project_git.split('/')[1].split('$')[0] if '$' in project_git else project_git.split('/')[1],
+            'branch': project_git.split('$')[1] if '$' in project_git else 'master'
         }
-        self.custom_benchmark = project.get('custom_benchmark', None)
 
         self.use_lttng = use_lttng
         self.use_llm = use_llm
