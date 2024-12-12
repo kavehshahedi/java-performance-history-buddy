@@ -8,6 +8,7 @@ import time
 import sys
 import re
 
+from jphb.services.trace_parser import TraceParser
 from jphb.services.yaml_service import YamlCreator
 
 from jphb.services.pom_service import PomService
@@ -298,7 +299,6 @@ class BenchmarkExecutor:
         # We want to minimize the number of benchmarks for running
         chosen_benchmarks = self.__minimize_and_distribute_methods(benchmarks=chosen_benchmarks)
 
-        performance_results = {}
         for commit_hash_, chosen_benchmarks_ in chosen_benchmarks.items():
             # Empty the execution directory first
             config_directory = os.path.join('results', self.project_name, 'commits', commit.hexsha, 'execution', commit_hash_)
@@ -353,20 +353,36 @@ class BenchmarkExecutor:
                                             java_version=self.java_version)
                 
             Logger.info('Running benchmarks...', num_indentations=self.printer_indent+1)
-            performance_data = self.__run_benchmark_and_get_performance_data(benchmark_jar_path=benchmark_jar_path,
+            self.__run_benchmark(benchmark_jar_path=benchmark_jar_path,
                                                                              config_directory=config_directory,
                                                                              java_version=self.java_version)
-            if not performance_data:
-                Logger.error(f'Error while running benchmarks for getting performance data', num_indentations=self.printer_indent+2)
-                return False, None
             Logger.success(f'Benchmarks are executed successfully', num_indentations=self.printer_indent+2)
 
-            performance_results[commit_hash_] = performance_data
+        # Analyze the performance data
+        Logger.info('Analyzing the performance data...', num_indentations=self.printer_indent)
+        performance_results = {}
+        for commit_hash_, chosen_benchmarks_ in chosen_benchmarks.items():
+            is_current = commit_hash_ == current_commit_hash
+            if not is_current:
+                continue
 
-        # NOTE: Not sure if we need to remove the execution directory for now
-        # # Remove the execution directory
-        # for file in os.listdir(config_directory):
-        #     os.remove(os.path.join(config_directory, file))
+            current_config_directory = os.path.join('results', self.project_name, 'commits', commit.hexsha, 'execution', commit_hash_)
+            previous_config_directory = os.path.join('results', self.project_name, 'commits', commit.hexsha, 'execution', previous_commit_hash)
+
+            for bench_name in list(chosen_benchmarks_.keys()):
+                current_log_file = os.path.join(current_config_directory, 'ust', f'{bench_name}.log')
+                previous_log_file = os.path.join(previous_config_directory, 'ust', f'{bench_name}.log')
+
+                current_analysis = PerformanceAnalysis(current_log_file)
+                current_analysis.analyze()
+                previous_analysis = PerformanceAnalysis(previous_log_file)
+                previous_analysis.analyze()
+            
+                performance_results[bench_name] = previous_analysis.calculate_significance(current_analysis)
+
+        if not performance_results:
+            Logger.error(f'Error while analyzing the performance data', num_indentations=self.printer_indent+1)
+            return False, None
 
         return True, performance_results
 
@@ -642,7 +658,7 @@ class BenchmarkExecutor:
 
         target_methods = set()
 
-        converted_trace_data = PerformanceAnalysis.get_trace_data_well_formatted(log_path)
+        converted_trace_data = TraceParser.get_trace_data_well_formatted(log_path)
         for line in converted_trace_data:
             target_methods.add(
                 ' '.join(line.strip().split(' ')[2:]).split('(')[0].strip())
@@ -790,13 +806,12 @@ class BenchmarkExecutor:
 
         return selected_benchmarks
 
-    def __run_benchmark_and_get_performance_data(self, benchmark_jar_path: str,
+    def __run_benchmark(self, benchmark_jar_path: str,
                                                  config_directory: str,
                                                  java_version: str) -> Union[NoneType, dict]:
         # Open all of the config files
         configs = [file for file in os.listdir(config_directory) if file.endswith('.yaml')]
 
-        performance_data = {}
         for config in configs:
             benchmark_name = config.replace('.yaml', '')
             config_path = os.path.join(config_directory, config)
@@ -841,12 +856,6 @@ class BenchmarkExecutor:
             if process.returncode != 0:
                 Logger.error(f'Error while running the benchmark {benchmark_name}', num_indentations=self.printer_indent+1)
                 return None
-
-            # Analyze the performance
-            method_performances = PerformanceAnalysis(log_path).analyze()
-            performance_data[benchmark_name] = method_performances
-
-        return performance_data
     
     def __update_java_version_everywhere(self, java_version: str) -> None:
         for root, _, files in os.walk(self.project_path):

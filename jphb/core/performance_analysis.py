@@ -1,88 +1,62 @@
+from difflib import SequenceMatcher
 import re
 import os
 import json
 from collections import deque, defaultdict
 from scipy import stats
 import numpy as np
-
-# Regular expressions for parsing trace lines
-general_pattern = re.compile(r'\[(\d+)\] (S|E) (.+)')
-enter_pattern = re.compile(r'\[(\d+)\] S (.+)')
-exit_pattern = re.compile(r'\[(\d+)\] E (.+)')
+from typing import Any, Dict, cast
 
 class PerformanceAnalysis:
+    """Analyze performance changes between two versions of a program
+    
+    Basically, we want to compare the execution times of functions between two versions (before and after).
+    We will use the Mann-Whitney U test to determine if the changes are statistically significant.
+    We will also use Cliff's Delta effect size to determine the magnitude of the changes.
+    Accordingly, we will indicate if the changes are improvements, regressions, or unchanged (i.e., insignificant).
+
+    Attributes:
+    - trace_data_path: Path to the trace data file
+    - trace_file_directory: Directory containing the trace data file
+    - trace_file_name: Name of the trace data file
+    - execution_times: A dictionary to store execution times for each function
+    """
     def __init__(self, trace_data_path: str) -> None:
+        """Initialize the PerformanceDiffSignificance object
+
+        :param trace_data_path: Path to the trace data file
+        :type trace_data_path: str
+        """
         self.trace_data_path = trace_data_path
         self.trace_file_directory = os.path.dirname(trace_data_path)
         self.trace_file_name = trace_data_path.replace(f'{self.trace_file_directory}/', '').replace('.log', '')
-        self.z_threshold = 3.0  # Z-score threshold for outlier removal
+        self.execution_times = defaultdict(list)  # Store execution times for each function
 
-    def analyze(self) -> dict:
-        total_times = defaultdict(list)
-        self_times = defaultdict(list)
-        call_counts = defaultdict(int)
+    def _process_line(self, line: str, call_stack: deque) -> None:
+        """Process a single trace line and update execution times
+        
+        :param line: A single line from the trace file
+        :type line: str
+        :param call_stack: A stack to keep track of function calls
+        :type call_stack: deque
+        """
+        enter_pattern = re.compile(r'\[(\d+)\] S (.+)')
+        exit_pattern = re.compile(r'\[(\d+)\] E (.+)')
 
-        call_stack = deque()
-
-        for line in self._batch_process_traces():
-            self._process_line(line, call_stack, total_times, self_times, call_counts)
-
-        output = {}
-        for function in total_times:
-            cleaned_total_times = self._remove_outliers(total_times[function])
-            cleaned_self_times = self._remove_outliers(self_times[function])
-            
-            if cleaned_total_times and cleaned_self_times:  # Check if lists are not empty after outlier removal
-                output[function] = {
-                    'total_execution_time': int(np.sum(cleaned_total_times)),
-                    'self_execution_time': int(np.sum(cleaned_self_times)),
-                    'average_self_time': float(np.mean(cleaned_self_times)),
-                    'cumulative_execution_time': int(np.sum(cleaned_total_times)),
-                    'min_execution_time': int(np.min(cleaned_total_times)),
-                    'max_execution_time': int(np.max(cleaned_total_times)),
-                    'call_count': len(cleaned_total_times)  # This is now the count after outlier removal
-                }
-            else:
-                # Handle the case where all data points were considered outliers
-                output[function] = {
-                    'total_execution_time': 0,
-                    'self_execution_time': 0,
-                    'average_self_time': 0,
-                    'cumulative_execution_time': 0,
-                    'min_execution_time': 0,
-                    'max_execution_time': 0,
-                    'call_count': 0
-                }
-
-        return output
-
-    def _remove_outliers(self, data):
-        if len(data) < 2:  # Need at least 2 data points to calculate z-score
-            return data
-        z_scores = np.abs(stats.zscore(data))
-        return [d for d, z in zip(data, z_scores) if z < self.z_threshold]
-
-    def _process_line(self, line, call_stack, total_times, self_times, call_counts):
         if (match := re.match(enter_pattern, line)):
             timestamp, function = match.groups()
-            call_stack.append((function, int(timestamp), 0))  # function, start time, child time
-            call_counts[function] += 1
+            call_stack.append((function, int(timestamp)))
         elif (match := re.match(exit_pattern, line)):
             timestamp, function = match.groups()
             exit_time = int(timestamp)
             if call_stack and call_stack[-1][0] == function:
-                _, start_time, child_time = call_stack.pop()
-                total_time = exit_time - start_time
-                self_time = total_time - child_time
-
-                total_times[function].append(total_time)
-                self_times[function].append(self_time)
-
-                if call_stack:
-                    parent_function, parent_start, parent_child_time = call_stack.pop()
-                    call_stack.append((parent_function, parent_start, parent_child_time + total_time))
+                _, start_time = call_stack.pop()
+                duration = exit_time - start_time
+                self.execution_times[function].append(duration)
 
     def _batch_process_traces(self):
+        """Process all trace files and yield each line"""
+        general_pattern = re.compile(r'\[(\d+)\] (S|E) (.+)')
         for file in sorted(os.listdir(self.trace_file_directory)):
             if self.trace_file_name in file:
                 timestamp = file.replace(f'{self.trace_file_name}_', '').replace('.log', '').replace('.json', '')
@@ -92,83 +66,181 @@ class PerformanceAnalysis:
                     json_file = f'{self.trace_file_directory}/{self.trace_file_name}_{timestamp}.json'
                     
                     if os.path.exists(json_file):
-                        yield from self._process_trace_file(log_file, json_file)
+                        with open(json_file, 'r') as f:
+                            metadata = json.load(f)
+                        
+                        log_time_difference = metadata['log_time_difference']
+                        method_signature_hash = {v: k for k, v in metadata['method_signature_hash'].items()}
+                        
+                        with open(log_file, 'r') as f:
+                            for line in f:
+                                match = general_pattern.match(line)
+                                if match:
+                                    time, start_or_end, method = match.groups()
+                                    time = int(time) + log_time_difference
+                                    method = method_signature_hash.get(method, method)
+                                    yield f'[{time}] {start_or_end} {method}'
 
-    def _process_trace_file(self, log_file, json_file):
-        with open(json_file, 'r') as f:
-            metadata = json.load(f)
-        
-        log_time_difference = metadata['log_time_difference']
-        method_signature_hash = {v: k for k, v in metadata['method_signature_hash'].items()}
+    def _remove_outliers(self, data: np.ndarray, iqr_multiplier: float = 1.5) -> np.ndarray:
+        """Remove outliers from data using IQR method
 
-        with open(log_file, 'r') as f:
-            for line in f:
-                match = general_pattern.match(line)
-                if match:
-                    time, start_or_end, method = match.groups()
-                    time = int(time) + log_time_difference
-                    method = method_signature_hash.get(method, method)
-                    yield f'[{time}] {start_or_end} {method}'
-
-    @staticmethod
-    def get_trace_data_well_formatted(trace_data_path: str) -> list[str]:
+        :param data: An array of data points
+        :type data: np.ndarray
+        :param iqr_multiplier: A multiplier to adjust the IQR range, defaults to 1.5
+        :type iqr_multiplier: float, optional
+        :return: An array of data points with outliers removed
+        :rtype: np.ndarray
         """
-        Here, we want to parse the trace data with their metadata to analyze the performance of the project.
+        if len(data) < 2:  # Need at least 2 data points to calculate IQR
+            return data
+        
+        q1, q3 = np.percentile(data, [25, 75])
+        iqr = q3 - q1
+        lower_bound = q1 - (iqr_multiplier * iqr)
+        upper_bound = q3 + (iqr_multiplier * iqr)
+        return data[(data >= lower_bound) & (data <= upper_bound)]
 
-        The reasons for using metadata are:
-            - The log time difference is used to adjust the time of the trace data.
-                -- Since the original times in the log files are reduced in character lenght for storage usage.
-            - The method signature hash is used to map the method signatures to their original form.
-                -- Again, we wanted to reduce the character length for storage usage.
+    def analyze(self) -> None:
+        """Process all trace files and collect execution times"""
+        call_stack = deque()
+        for line in self._batch_process_traces():
+            self._process_line(line, call_stack)
 
-        Steps:
-            1. Read each trace data and its metadata (they are separated by timestamp).
-            2. Combine the trace data and metadata.
-            3. Aggregate the trace data in a single list.
+    def calculate_cliffs_delta(self, x: np.ndarray, y: np.ndarray) -> float:
         """
+        Calculate Cliff's Delta effect size using a more efficient approach.
+        Returns a value between -1 and 1, where:
+        - Close to +1: y is consistently greater than x
+        - Close to -1: y is consistently less than x
+        - Close to 0: no consistent difference
+
+        :param x: An array of data points for the first sample
+        :type x: np.ndarray
+        :param y: An array of data points for the second sample
+        :type y: np.ndarray
+        :return: Cliff's Delta effect size
+        :rtype: float
+        """
+        nx, ny = len(x), len(y)
+        rank = stats.rankdata(np.concatenate((x, y)))
+        rank_x = rank[:nx]
+        rank_y = rank[nx:]
         
-        traces = []
-
-        trace_data = {}
-        trace_file_directory = os.path.dirname(trace_data_path)
-        trace_file_name = trace_data_path.replace(f'{trace_file_directory}/', '').replace('.log', '')
+        u_x = np.sum(rank_x) - nx * (nx + 1) / 2
+        u_y = np.sum(rank_y) - ny * (ny + 1) / 2
         
-        # Iterate over all files in the directory
-        for file in os.listdir(trace_file_directory):
-            if trace_file_name in file:
-                # Check if file is a log file or a json file
-                timestamp = file.replace(f'{trace_file_name}_', '').replace('.log', '').replace('.json', '')
+        return cast(float, (u_x - u_y) / (nx * ny))
 
-                if file.endswith('.log'): # The trace data
-                    with open(f'{trace_file_directory}/{file}', 'r') as f:
-                        trace_data[timestamp] = trace_data.get(timestamp, {})
-                        trace_data[timestamp]['trace'] = f.readlines()
-                elif file.endswith('.json'): # The metadata (of the trace data)
-                    with open(f'{trace_file_directory}/{file}', 'r') as f:
-                        trace_data[timestamp] = trace_data.get(timestamp, {})
-                        trace_data[timestamp]['metadata'] = json.load(f)
+    def interpret_cliffs_delta(self, d: float) -> str:
+        """
+        Interpret Cliff's Delta effect size based on common thresholds:
+        negligible: |d| < 0.147
+        small: |d| < 0.33
+        medium: |d| < 0.474
+        large: |d| >= 0.474
 
-        for timestamp, data in trace_data.items():
-            # There are some cases that the trace data is not available (e.g., empty executions)
-            if 'trace' not in data or 'metadata' not in data or not data['trace']:
-                continue
+        :param d: Cliff's Delta effect size
+        :type d: float
+        :return: Interpretation of the effect size
+        :rtype: str
+        """
+        abs_d = abs(d)
+        if abs_d < 0.147:
+            return "negligible"
+        elif abs_d < 0.33:
+            return "small"
+        elif abs_d < 0.474:
+            return "medium"
+        else:
+            return "large"
 
-            trace = data['trace']
-            metadata = data['metadata']
-            log_time_difference = metadata['log_time_difference']
-            method_signature_hash = {v: k for k, v in metadata['method_signature_hash'].items()}
+    def calculate_significance(self, other_analysis: 'PerformanceAnalysis') -> Dict[str, Dict[str, Any]]:
+        """
+        Calculate statistical significance of changes between two versions using
+        Mann-Whitney U test (p-value) and Cliff's Delta (effect size)
 
-            trace_data = []
-            for line in trace:
-                match = general_pattern.match(line)
-                if match:
-                    time, start_or_end, method = match.groups()
-                    time = int(time) + log_time_difference # Adjust the time
-                    method = method_signature_hash.get(method, method) # Convert back to original method signature
-                    line = f'[{time}] {start_or_end} {method}' # Update the line
-                    trace_data.append(line)
+        :param other_analysis: Another instance of PerformanceDiffSignificance for the other version
+        :type other_analysis: PerformanceDiffSignificance
+        :return: A dictionary of method changes with statistical significance
+        :rtype: Dict[str, Any]
+        """    
+        methods_ = list(self.execution_times.keys())
+        other_methods_ = list(other_analysis.execution_times.keys())
+        matches: list[tuple[str, str]] = []
 
-            # Add the trace data to the list
-            traces.extend(trace_data)
+        # First, match methods with exact names
+        for method in methods_[:]:
+            if method in other_methods_:
+                matches.append((method, method))
+                methods_.remove(method)
+                other_methods_.remove(method)
 
-        return traces
+        # Then, find the most similar method for the remaining ones
+        for method in methods_:
+            if other_methods_:
+                # Find the most similar method name in other_methods_
+                most_similar_method = max(other_methods_, key=lambda x: SequenceMatcher(None, method, x).ratio())
+                matches.append((method, most_similar_method))
+                other_methods_.remove(most_similar_method)
+
+        results = {}
+        for method_, other_method in matches:
+            before_times = np.array(self.execution_times[method_])
+            after_times = np.array(other_analysis.execution_times[other_method])
+            
+            # Remove outliers using a more conservative method
+            before_times = self._remove_outliers(before_times)
+            after_times = self._remove_outliers(after_times)
+            
+            if len(before_times) < 2 or len(after_times) < 2:
+                return {}
+                
+            # Calculate basic statistics
+            before_median = np.median(before_times)
+            after_median = np.median(after_times)
+            
+            if before_median == 0:
+                return {}
+                
+            # Calculate relative change
+            median_change = (after_median - before_median) / before_median
+            
+            # Perform Mann-Whitney U test
+            _, p_value = stats.mannwhitneyu(
+                before_times,
+                after_times,
+                alternative='two-sided'
+            )
+            
+            # Calculate Cliff's Delta effect size
+            effect_size = self.calculate_cliffs_delta(before_times, after_times)
+            effect_size_interpretation = self.interpret_cliffs_delta(effect_size)
+            
+            # Determine change type based on both p-value and effect size
+            is_statistically_significant = p_value < 0.05
+            has_meaningful_effect = abs(effect_size) >= 0.147  # at least small effect
+            
+            if is_statistically_significant and has_meaningful_effect:
+                if median_change > 0:
+                    change_type = "regression"
+                else:
+                    change_type = "improvement"
+            else:
+                change_type = "unchanged"
+                
+            results[method_] = {
+                "method_name": method_,
+                "previous_method_name": other_method,
+                "change_type": change_type,
+                "median_change_percentage": median_change * 100,
+                "p_value": p_value,
+                "effect_size": effect_size,
+                "effect_size_interpretation": effect_size_interpretation,
+                "statistically_significant": int(is_statistically_significant),
+                "sample_size": {
+                    "before": len(before_times),
+                    "after": len(after_times)
+                }
+            }
+
+        return results
