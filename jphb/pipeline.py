@@ -21,10 +21,17 @@ class Pipeline:
                  project_git: str,
                  project_package: str,
                  base_project_path: str,
+                 num_forks: int,
+                 num_warmups: int,
+                 num_iterations: int,
+                 measurement_time: str,
+                 max_instrumentations: int,
+                 custom_commits_path: str = '',
                  project_benchmark_module: str = '',
                  use_lttng: bool = False,
                  use_llm: bool = False,
                  use_email_notification: bool = False,
+                 use_db: bool = False,
                  use_cloud_db: bool = False) -> None:
         self.project_name = project_name
         self.project_path = os.path.join(base_project_path, self.project_name)
@@ -41,13 +48,26 @@ class Pipeline:
             'repo': project_git.split('/')[1].split('$')[0] if '$' in project_git else project_git.split('/')[1],
             'branch': project_git.split('$')[1] if '$' in project_git else 'master'
         }
+        self.custom_commits = None
+        if custom_commits_path and os.path.exists(custom_commits_path):
+            try:
+                with open(custom_commits_path, 'r') as f:
+                    self.custom_commits = f.read().splitlines()
+            except Exception as e:
+                Logger.error(f'Failed to read custom commits file: {str(e)}', bold=True)
+
+        self.num_forks = num_forks
+        self.num_warmups = num_warmups
+        self.num_iterations = num_iterations
+        self.measurement_time = measurement_time
+        self.max_instrumentations = max_instrumentations
 
         self.use_lttng = use_lttng
         self.use_llm = use_llm
 
         self.email_service = EmailService(project_name=self.project_name) if use_email_notification else None
 
-        self.db_service = DBService(use_cloud_db=use_cloud_db)
+        self.db_service = DBService(use_db=use_db, use_cloud_db=use_cloud_db)
 
     def run(self) -> None:
         # First we check if the candidate commits have already been selected
@@ -77,7 +97,7 @@ class Pipeline:
                                     custom_benchmark=self.custom_benchmark,
                                     use_llm=self.use_llm,
                                     printer_indent=1)
-            num_mined_commits = pcm.mine(force=False)
+            num_mined_commits = pcm.mine(force=False, custom_commits=self.custom_commits)
 
             # Step 3: Mine benchmark presence
             Logger.separator()
@@ -88,7 +108,7 @@ class Pipeline:
                                         custom_benchmark=self.custom_benchmark,
                                         check_root_pom=True,
                                         printer_indent=1)
-            num_commits_with_benchmark = bpm.mine()
+            num_commits_with_benchmark = bpm.mine(custom_commits=self.custom_commits)
 
             # Step 4: Candidate commits
             Logger.separator()
@@ -111,6 +131,10 @@ class Pipeline:
                                            num_commits_with_changes=num_mined_commits)
         else:
             candidate_commits = FileUtils.read_json_file(candidate_commits_file_path)
+
+        # Filter-out the commits that are not in custom_commits (if provided)
+        if self.custom_commits and len(self.custom_commits) > 0:
+            candidate_commits = [commit for commit in candidate_commits if commit['commit'] in self.custom_commits]
 
         Logger.separator()
         Logger.info(f'Found {len(candidate_commits)} candidate commits for {self.project_name}.', bold=True)
@@ -153,6 +177,11 @@ class Pipeline:
             # Execute the benchmark
             executor = BenchmarkExecutor(project_name=self.project_name,
                                          project_path=self.project_path,
+                                         num_forks=self.num_forks,
+                                         num_warmups=self.num_warmups,
+                                         num_iterations=self.num_iterations,
+                                         measurement_time=self.measurement_time,
+                                         max_instrumentations=self.max_instrumentations,
                                          printer_indent=1,
                                          use_lttng=self.use_lttng)
             executed, performance_data = executor.execute(jmh_dependency=candidate_commit['jmh_dependency'],

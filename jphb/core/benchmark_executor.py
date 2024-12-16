@@ -23,9 +23,18 @@ from jphb.core.performance_analysis import PerformanceAnalysis
 
 class BenchmarkExecutor:
 
-    def __init__(self, project_name: str, project_path: str, **kwargs) -> None:
+    def __init__(self, project_name: str, project_path: str,
+                 num_forks: int, num_iterations: int,
+                 num_warmups: int, measurement_time: str,
+                 max_instrumentations: int, **kwargs) -> None:
         self.project_name = project_name
         self.project_path = project_path
+
+        self.num_forks = num_forks
+        self.num_iterations = num_iterations
+        self.num_warmups = num_warmups
+        self.measurement_time = measurement_time
+        self.max_instrumentations = max_instrumentations
 
         self.repo = Repo(self.project_path)
 
@@ -840,9 +849,10 @@ class BenchmarkExecutor:
                 f'-javaagent:{self.jib_path}=config={config_path}',
                 '-jar',
                 benchmark_jar_path,
-                '-f', '3',
-                '-wi', '0',
-                '-i', '5',
+                '-f', str(self.num_forks),
+                '-wi', str(self.num_warmups),
+                '-i', str(self.num_iterations),
+                '-r', str(self.measurement_time),
                 '-rf', 'json',
                 '-rff', jmh_json_path,
                 benchmark_name
