@@ -73,7 +73,6 @@ ENV PATH="$JAVA_HOME/bin:/usr/local/bin:${PATH}"
 # Copy the toolchains.xml file to the container
 # It should be both for root and the user
 COPY conf/java/toolchains.xml /root/.m2/toolchains.xml
-COPY conf/java/toolchains.xml /home/kavehshahedi/.m2/toolchains.xml
 
 # Copy the maven settings.xml file to the container (both for global usage and the user)
 COPY conf/maven/settings.xml /root/.m2/settings.xml
