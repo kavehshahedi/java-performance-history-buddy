@@ -67,7 +67,7 @@ class BenchmarkPresenceMiner:
         else:
             if checkout:
                 repo.git.checkout(commit.hexsha, force=True)
-            benchmark_directory = self.custom_benchmark['directory']
+            benchmark_directory = self.custom_benchmark.get('directory', '')
             pom_path = os.path.join(self.project_path, benchmark_directory, 'pom.xml')
             if not FileUtils.is_path_exists(pom_path):
                 return there_is_dependency, benchmark_directory, benchmark_name

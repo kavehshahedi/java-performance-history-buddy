@@ -8,7 +8,7 @@ BASE_PROJECT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pr
 
 if __name__ == '__main__':
     random.seed(42)
-    
+
     parser = argparse.ArgumentParser(description='Java Performance Evolution Buddy (JPerfEvo)',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -18,6 +18,8 @@ if __name__ == '__main__':
     parser.add_argument('--package', type=str, help='Package name of the project to analyze', required=True)
     parser.add_argument('--benchmark-module', type=str, help='Benchmark module of the project to analyze')
     parser.add_argument('--custom-commits', type=str, help='Path to a file containing custom commits to analyze, one per line', default=None)
+    parser.add_argument('--only-jvm-compilation', action='store_true', help='Only analyze and store the JVM compilation information', default=False)
+    parser.add_argument('--use-samling', action='store_true', help='Use sampling for candidate commits', default=False)
 
     # Optional arguments - Benchmarking Configuration
     parser.add_argument('--forks', type=int, help='Number of forks for the benchmarking process', default=3)
@@ -41,6 +43,8 @@ if __name__ == '__main__':
                         project_benchmark_module=args.benchmark_module,
                         base_project_path=BASE_PROJECT_PATH,
                         custom_commits_path=args.custom_commits,
+                        only_jvm_compilation=args.only_jvm_compilation,
+                        use_sampling=args.use_samling,
                         num_forks=args.forks,
                         num_warmups=args.warmups,
                         num_iterations=args.iterations,

@@ -8,6 +8,7 @@ import time
 import sys
 import re
 
+from jphb.services.jvm_service import JvmService
 from jphb.services.trace_parser import TraceParser
 from jphb.services.yaml_service import YamlCreator
 
@@ -43,6 +44,8 @@ class BenchmarkExecutor:
         self.jib_path = os.path.join(sys.path[0], 'jphb', 'resources', 'jib.jar')
 
         self.use_lttng = kwargs.get('use_lttng', False)
+
+        self.only_jvm_compilation = kwargs.get('only_jvm_compilation', False)
 
     def __clean_checkout(self, commit_hash: str) -> None:
         self.repo.git.clean('-fdx')
@@ -103,6 +106,8 @@ class BenchmarkExecutor:
         Logger.info(f'Benchmark name: {self.project_benchmark_name}', num_indentations=self.printer_indent)
         Logger.info(f'Java version: {self.java_version}', num_indentations=self.printer_indent)
         Logger.separator(num_indentations=self.printer_indent)
+
+        jvm_service = JvmService(self.project_name, self.printer_indent)
 
         commit = self.repo.commit(current_commit_hash)
 
@@ -360,12 +365,24 @@ class BenchmarkExecutor:
                                             benchmark_commit_hash=commit_hash_,
                                             build_anyway=True, # Since we need to run the benchmarks, we build them anyway
                                             java_version=self.java_version)
+                    
+            if (self.only_jvm_compilation):
+                jvm_service.execute_jvm_profiling(commit_hash=commit.hexsha,
+                                            current_commit_hash=commit_hash_,
+                                            benchmarks=list(chosen_benchmarks_.keys()),
+                                            benchmark_jar_path=benchmark_jar_path,
+                                            java_version=self.java_version)
+                continue
                 
             Logger.info('Running benchmarks...', num_indentations=self.printer_indent+1)
             self.__run_benchmark(benchmark_jar_path=benchmark_jar_path,
                                                                              config_directory=config_directory,
                                                                              java_version=self.java_version)
             Logger.success(f'Benchmarks are executed successfully', num_indentations=self.printer_indent+2)
+
+        if self.only_jvm_compilation:
+            jvm_service.analyze_jvm_compilation_data(commit.hexsha, previous_commit_hash)
+            return True, None
 
         # Analyze the performance data
         Logger.info('Analyzing the performance data...', num_indentations=self.printer_indent)
