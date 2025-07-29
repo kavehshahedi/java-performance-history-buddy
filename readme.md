@@ -141,5 +141,17 @@ The tool generates the following outputs:
 - **Email Notifications**: Notify users of pipeline results via email.
 - **Database Support**: Store results in MongoDB for further analysis.
 
+## Citation
+```bibtex
+@inproceedings{shahedi2025jperfevo,
+  title={JPerfEvo: A Tool for Tracking Method-Level Performance Changes in Java Projects},
+  author={Shahedi, Kaveh and Lamothe, Maxime and Khomh, Foutse and Li, Heng},
+  booktitle={2025 IEEE/ACM 22nd International Conference on Mining Software Repositories (MSR)},
+  pages={856--860},
+  year={2025},
+  organization={IEEE}
+}
+```
+
 ## License
 This project is licensed under the MIT License. See `LICENSE` for more details.
